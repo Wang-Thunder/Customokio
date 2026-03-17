@@ -1,0 +1,197 @@
+# Customokio 🕶️
+
+Customokio is a reversible Pinokio home-screen customization that adds categories, nesting, drag-and-drop organization, per-category views, and client-side sorting without replacing the overall Pinokio look and feel.
+
+It installs through Pinokio's supported `PINOKIO_HOME/web` customization path, so it behaves like a customization layer, not a fork of Pinokio core.
+
+![Customokio Animated Overview](assets/customokio_overview.gif)
+
+## 📁 What It Does
+
+Customokio keeps the normal Pinokio home page structure and adds an organization layer on top of the existing app cards.
+
+Feature highlights:
+
+- Create top-level categories.
+- Create nested subcategories.
+- Drag apps into categories and subcategories.
+- Drag categories into other categories.
+- Rename categories.
+- Collapse or expand all categories at once.
+- Collapse and expand categories with double-click.
+- Switch the overall category container layout between `Stacked view` and `Folder view`.
+- Switch each category's app display between `List view` and `Grid view`.
+- Sort each category independently:
+  - `Manual order`
+  - `A-Z`
+  - `Most used`
+  - `Last opened`
+- Reset usage history for a single category subtree.
+- Filter the home screen by top-level category.
+- Search across the reorganized home screen.
+- Star apps and keep starred state available even when Pinokio's server-side star endpoint is unavailable.
+- Color-code categories.
+- Assign category icons.
+- Export and import the layout as JSON.
+- Restore the default Pinokio home page.
+
+![Customokio Hero Overview](assets/home7_1280x640.png)
+
+## 🚫 What It Does Not Do
+
+Customokio is intentionally client-side for organization behavior.
+
+- It does not change Pinokio server behavior.
+- It does not rewrite app metadata on disk.
+- Category layout, local star fallback, and usage-based sort history are stored in browser local storage.
+- On Pinokio builds where the `/apps/preferences/:id` endpoint is unavailable, star state falls back to local browser storage.
+
+## 🧭 Feature Walkthrough
+
+### 🏠 Familiar Pinokio Home, Better Organized
+
+Customokio keeps the stock Pinokio home structure and layers categories on top instead of replacing the page.
+
+![Customized Home Screen](assets/home1.png)
+
+### ➕ Create Categories Quickly
+
+Use `New category` to make top-level organization buckets without leaving the home screen.
+
+![Create Category](assets/home2.png)
+
+### 🗂️ Fill Categories With Apps And Subcategories
+
+Drag apps into a category, create subcategories, and build out a nested structure that matches how you actually browse your tools.
+
+![Category Ready For Apps](assets/home3.png)
+
+![Apps Inside A Category](assets/home4.png)
+
+### 🪟 Switch Views And Work With Multiple Groups
+
+Use stacked layout when you want everything expanded vertically, or folder layout when you want more categories visible at once.
+
+![Stacked Category Layout](assets/home5.png)
+
+![Folder Category Layout](assets/home6.png)
+
+## ⚙️ How Installation Works
+
+When you click `Apply`, the launcher:
+
+- backs up any existing `web/views/index.ejs`
+- backs up the sidebar partials if they already exist
+- copies the Customokio home template into `PINOKIO_HOME/web/views/index.ejs`
+- copies the required partials into `PINOKIO_HOME/web/views/partials/`
+- copies the client assets into `PINOKIO_HOME/web/public/`
+
+When you click `Restore Default`, the launcher:
+
+- restores the backed-up template and partials if they existed
+- removes the Customokio assets from `PINOKIO_HOME/web/public/`
+- removes its own temporary install state
+
+## ✋ How To Use
+
+1. Open the Customokio package in Pinokio.
+2. Click `Apply`.
+3. Refresh the Pinokio home page.
+4. Use `New category` to create categories.
+5. Drag apps and categories where you want them.
+6. Use the category action buttons to:
+   - add subcategories
+   - change sort mode
+   - reset category usage
+   - switch category item view
+   - set color
+   - set icon
+   - rename
+   - delete
+7. Use the top controls to:
+   - collapse all categories
+   - expand all categories
+   - switch layout mode
+   - export layout
+   - import layout
+   - reset layout
+   - filter by category
+
+## 🎯 Best For
+
+Customokio is useful if you want to:
+
+- separate apps by project, workflow, or media type
+- keep frequently used tools grouped together
+- collapse less-used sections until you need them
+- switch between a compact folder view and a more detailed stacked view
+- keep all organization local to your browser without changing Pinokio app metadata
+
+## 🔒 Storage And Privacy
+
+Customokio stores client-side state in browser local storage:
+
+- layout tree
+- category color/icon/view/sort settings
+- local usage history for `Most used` / `Last opened`
+- local star state fallback, when the Pinokio server preference endpoint is unavailable
+
+Customokio's home-screen behavior is local to the browser UI:
+
+- it does not send your category layout, sorting, stars, or other customization state to any external server
+- it does not read, use, or transmit your stored credentials, API keys, login tokens, or similar secrets
+- it reorganizes the existing Pinokio home page only and keeps its own state in local browser storage
+
+The repository itself does not need your machine name, user name, LAN IP, or local paths to work.
+
+## 📦 Files
+
+Main files in this package:
+
+- `pinokio.js`: launcher UI
+- `install.js`: apply customization
+- `reset.js`: restore previous/default state
+- `update.js`: reapply latest package files
+- `web/views/index.ejs`: customized home template
+- `web/views/partials/main_sidebar.ejs`
+- `web/views/partials/peer_access_points.ejs`
+- `web/public/customokio.js`: client logic
+- `web/public/customokio.css`: styling
+- `web/public/sortable.min.js`: bundled drag-and-drop dependency
+
+## 🧩 API Notes
+
+This project does not expose a server-side layout API.
+
+Available browser-side helper:
+
+```javascript
+window.Customokio.getState()
+window.Customokio.resetLayout()
+```
+
+Example:
+
+```javascript
+const snapshot = window.Customokio.getState()
+console.log(snapshot)
+```
+
+There is no supported curl endpoint for writing layout state because the customization is client-side.
+
+## 🚀 Publishing Notes
+
+If you publish this repository, publish the launcher package itself, not your runtime state.
+
+Safe to keep out of version control:
+
+- `state/`
+- `logs/`
+- `cache/`
+- `.pinokio-temp/`
+- any manually captured local runtime files outside the tracked package
+
+## 🔗 References
+
+- Pinokio customization docs: https://pinokio.co/docs/#/?id=customization
+- Pinokio repository: https://github.com/pinokiocomputer/pinokio

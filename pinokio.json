@@ -1,0 +1,20 @@
+{
+  "title": "Customokio",
+  "description": "Organize the Pinokio home screen with nested categories, drag-and-drop folders, per-category sorting, grid/list views, and reversible installation.",
+  "icon": "assets/icon.png",
+  "links": [
+    {
+      "title": "References",
+      "links": [
+        {
+          "title": "Repository",
+          "value": "https://github.com/Wang-Thunder/Customokio"
+        },
+        {
+          "title": "Customization Docs",
+          "value": "https://pinokio.co/docs/#/?id=customization"
+        }
+      ]
+    }
+  ]
+}

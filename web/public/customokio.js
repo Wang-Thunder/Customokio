@@ -1,0 +1,1000 @@
+(function () {
+  const STORAGE_KEY = "customokio:layout:v3";
+  const USAGE_STORAGE_KEY = "customokio:usage:v1";
+  const PREFS_STORAGE_KEY = "customokio:prefs:v1";
+  const LEGACY_KEYS = ["customokio:layout:v2", "customokio:layout:v1"];
+  const HOME_CATEGORY_ID = "cat-home";
+  const DEFAULT_CATEGORY_COLOR = "#6b7280";
+  const EMOJIS = ["📁", "🏠", "⭐", "🧰", "🎵", "🎬", "🤖", "🧪", "📝", "🎨", "📦", "🔥", "📚", "🕹️", "🗂️", "🎯", "🧠", "🎤", "📷", "🛠️", "💬", "🧬", "🛰️", "🔒"];
+  const COLORS = ["#6b7280", "#4b5563", "#1f2937", "#2563eb", "#0f766e", "#15803d", "#b45309", "#b91c1c", "#7c3aed", "#db2777"];
+
+  function clone(value) { return JSON.parse(JSON.stringify(value)); }
+  function makeId(prefix) { return prefix + "-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8); }
+  function normalizeColor(value) {
+    const v = String(value || "").trim();
+    if (/^#[0-9a-f]{6}$/i.test(v)) return v;
+    if (/^#[0-9a-f]{3}$/i.test(v)) return "#" + v.slice(1).split("").map((c) => c + c).join("");
+    return DEFAULT_CATEGORY_COLOR;
+  }
+  function createCategory(name, overrides) {
+    return Object.assign({ id: makeId("cat"), name: name || "New Category", icon: "📁", color: DEFAULT_CATEGORY_COLOR, collapsed: false, sortMode: "manual", itemLayout: "list", children: [] }, overrides || {});
+  }
+  function createDefaultState(cardRefs) {
+    const refs = Array.from(cardRefs);
+    return {
+      version: 3,
+      layoutMode: "stack",
+      customColors: [],
+      root: refs.length ? [HOME_CATEGORY_ID] : [],
+      categories: refs.length ? {
+        [HOME_CATEGORY_ID]: createCategory("Home", { id: HOME_CATEGORY_ID, icon: "🏠", color: DEFAULT_CATEGORY_COLOR, collapsed: false, children: refs })
+      } : {}
+    };
+  }
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY) || LEGACY_KEYS.map((key) => localStorage.getItem(key)).find(Boolean);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      console.error("Failed to load Customokio state", e);
+      return null;
+    }
+  }
+  function saveState(state) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    LEGACY_KEYS.forEach((key) => localStorage.removeItem(key));
+  }
+  function loadUsageState() {
+    try {
+      const raw = localStorage.getItem(USAGE_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      console.error("Failed to load Customokio usage state", e);
+      return {};
+    }
+  }
+  function saveUsageState(usage) {
+    localStorage.setItem(USAGE_STORAGE_KEY, JSON.stringify(usage));
+  }
+  function loadPrefsState() {
+    try {
+      const raw = localStorage.getItem(PREFS_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      console.error("Failed to load Customokio prefs state", e);
+      return {};
+    }
+  }
+  function savePrefsState(prefs) {
+    localStorage.setItem(PREFS_STORAGE_KEY, JSON.stringify(prefs));
+  }
+  function collectCards() {
+    const cards = [];
+    const seen = new Set();
+    [".running-apps > a.line", ".not-running-apps > a.line"].forEach((selector) => {
+      document.querySelectorAll(selector).forEach((card) => {
+        const ref = card.getAttribute("data-uri") || card.getAttribute("data-path") || card.getAttribute("href");
+        if (!ref || seen.has(ref)) return;
+        seen.add(ref);
+        cards.push({ ref: ref, card: card, name: card.getAttribute("data-name") || ref });
+      });
+    });
+    return cards;
+  }
+  function sanitizeState(rawState, cardRefs) {
+    const source = rawState && typeof rawState === "object" ? rawState : {};
+    const sourceCategories = source.categories && typeof source.categories === "object" ? source.categories : {};
+    const safe = { version: 3, layoutMode: source.layoutMode === "folder" ? "folder" : "stack", customColors: Array.isArray(source.customColors) ? source.customColors.map(normalizeColor).slice(0, 24) : [], root: [], categories: {} };
+    const visited = new Set();
+    function walk(refs) {
+      const output = [];
+      if (!Array.isArray(refs)) return output;
+      refs.forEach((ref) => {
+        if (typeof ref !== "string" || visited.has(ref)) return;
+        if (ref.startsWith("cat-")) {
+          const category = sourceCategories[ref];
+          if (!category || typeof category !== "object") return;
+          visited.add(ref);
+          safe.categories[ref] = createCategory(category.name, {
+            id: ref,
+            icon: typeof category.icon === "string" && category.icon.trim() ? category.icon.trim() : "📁",
+            color: normalizeColor(category.color),
+            collapsed: Boolean(category.collapsed),
+            sortMode: normalizeSortMode(category.sortMode || "manual"),
+            itemLayout: category.itemLayout === "grid" ? "grid" : "list",
+            children: walk(category.children)
+          });
+          output.push(ref);
+          return;
+        }
+        if (cardRefs.has(ref)) {
+          visited.add(ref);
+          output.push(ref);
+        }
+      });
+      return output;
+    }
+    safe.root = walk(source.root);
+    cardRefs.forEach((ref) => { if (!visited.has(ref)) safe.root.push(ref); });
+    return cardRefs.size && !safe.root.some((ref) => ref.startsWith("cat-")) ? createDefaultState(cardRefs) : safe;
+  }
+  function parseCardMeta(card, fallbackName) {
+    const launchCount = Number.parseInt(card.getAttribute("data-customokio-launch-count") || card.getAttribute("data-launch-count-total") || "0", 10);
+    const customLastLaunch = Number(card.getAttribute("data-customokio-last-launch") || "0");
+    const lastLaunchRaw = card.getAttribute("data-last-launch-at") || "";
+    const index = Number.parseInt(card.getAttribute("data-index") || String(Number.MAX_SAFE_INTEGER), 10);
+    const name = (
+      card.getAttribute("data-name") ||
+      card.querySelector(".name")?.textContent ||
+      card.querySelector(".title")?.textContent ||
+      fallbackName ||
+      card.textContent ||
+      ""
+    ).trim().toLowerCase();
+    return {
+      starred: card.getAttribute("data-starred") === "1" ? 1 : 0,
+      launchCount: Number.isFinite(launchCount) ? launchCount : 0,
+      lastLaunch: customLastLaunch > 0 ? customLastLaunch : (lastLaunchRaw ? (Date.parse(lastLaunchRaw) || 0) : 0),
+      index: Number.isFinite(index) ? index : Number.MAX_SAFE_INTEGER,
+      name: name
+    };
+  }
+  function compareCards(a, b, sortMode, fallbackNameA, fallbackNameB) {
+    const aa = parseCardMeta(a, fallbackNameA);
+    const bb = parseCardMeta(b, fallbackNameB);
+    if (aa.starred !== bb.starred) return bb.starred - aa.starred;
+    if (sortMode === "last_opened") {
+      if (aa.lastLaunch !== bb.lastLaunch) return bb.lastLaunch - aa.lastLaunch;
+      if (aa.launchCount !== bb.launchCount) return bb.launchCount - aa.launchCount;
+      const byName = aa.name.localeCompare(bb.name);
+      if (byName !== 0) return byName;
+    } else if (sortMode === "az" || sortMode === "category_az") {
+      const byName = aa.name.localeCompare(bb.name);
+      if (byName !== 0) return byName;
+    } else {
+      if (aa.launchCount !== bb.launchCount) return bb.launchCount - aa.launchCount;
+      if (aa.lastLaunch !== bb.lastLaunch) return bb.lastLaunch - aa.lastLaunch;
+      const byName = aa.name.localeCompare(bb.name);
+      if (byName !== 0) return byName;
+    }
+    if (aa.index !== bb.index) return aa.index - bb.index;
+    return aa.name.localeCompare(bb.name);
+  }
+  function normalizeSortMode(value) {
+    const mode = String(value || "").trim().toLowerCase();
+    return ["last_opened", "az", "manual", "most_used"].includes(mode) ? mode : "most_used";
+  }
+
+  function setup() {
+    const currentParams = new URLSearchParams(window.location.search);
+    if (currentParams.get("mode") === "terminals") return;
+    const searchForm = document.querySelector(".home-search-form");
+    const actionsHost = document.querySelector(".home-apps-header-main-actions");
+    const sortWrap = document.querySelector(".home-apps-sort");
+    const sortSelect = document.querySelector("#home-apps-sort-select");
+    const runningContainer = document.querySelector(".running-apps");
+    const notRunningContainer = document.querySelector(".not-running-apps");
+    if (!searchForm || !actionsHost || !sortWrap || !sortSelect || !runningContainer) return;
+
+    const cardEntries = collectCards();
+    if (!cardEntries.length) return;
+    const cardMap = new Map(cardEntries.map((entry) => [entry.ref, entry]));
+    const cardRefs = new Set(cardEntries.map((entry) => entry.ref));
+    let state = sanitizeState(loadState(), cardRefs);
+    let activeFilter = "all";
+    let floatingPanel = null;
+    let sortables = [];
+    let sortablePromise = null;
+    let usageState = loadUsageState();
+    let prefsState = loadPrefsState();
+
+    const groupHost = document.createElement("section");
+    groupHost.className = "customokio-group-host";
+    runningContainer.parentNode.insertBefore(groupHost, runningContainer);
+
+    const controls = document.createElement("div");
+    controls.className = "customokio-control-strip";
+    const toolbar = document.createElement("div");
+    toolbar.className = "customokio-toolbar";
+    toolbar.innerHTML = '<button type="button" class="btn" data-action="new"><i class="fa-solid fa-folder-plus"></i> New category</button><button type="button" class="btn" data-action="collapse-all"><i class="fa-solid fa-angles-up"></i> Collapse all</button><button type="button" class="btn" data-action="expand-all"><i class="fa-solid fa-angles-down"></i> Expand all</button><button type="button" class="btn" data-action="layout"><i class="fa-solid fa-table-cells-large"></i> Layout</button><button type="button" class="btn" data-action="export"><i class="fa-solid fa-file-export"></i> Export</button><button type="button" class="btn" data-action="import"><i class="fa-solid fa-file-import"></i> Import</button><button type="button" class="btn" data-action="reset"><i class="fa-solid fa-arrow-rotate-left"></i> Reset layout</button>';
+    const filterWrap = document.createElement("div");
+    filterWrap.className = "customokio-filter";
+    filterWrap.innerHTML = '<i class="fa-solid fa-filter" aria-hidden="true"></i><label for="customokio-category-filter">Category</label><select id="customokio-category-filter" aria-label="Filter by category"><option value="all">All categories</option></select><i class="fa-solid fa-chevron-down customokio-filter-caret" aria-hidden="true"></i>';
+    const supportLink = document.createElement("a");
+    supportLink.className = "customokio-support-link";
+    supportLink.href = "https://ko-fi.com/wangthunder";
+    supportLink.target = "_blank";
+    supportLink.rel = "noopener noreferrer";
+    supportLink.innerHTML = 'Like Customokio? Support this project on Ko-fi <span aria-hidden="true">❤️</span>';
+    searchForm.classList.add("customokio-search-support");
+    const searchInput = searchForm.querySelector("input[type='search'].flexible");
+    if (searchInput) {
+      searchInput.classList.add("customokio-search-input");
+      searchForm.appendChild(supportLink);
+    }
+    controls.appendChild(toolbar);
+    controls.appendChild(sortWrap);
+    controls.appendChild(filterWrap);
+    actionsHost.appendChild(controls);
+    const filterSelect = filterWrap.querySelector("select");
+
+    const importInput = document.createElement("input");
+    importInput.type = "file";
+    importInput.accept = "application/json";
+    importInput.hidden = true;
+    document.body.appendChild(importInput);
+
+    function persistState() { state = sanitizeState(state, cardRefs); saveState(state); }
+    function persistUsageState() { saveUsageState(usageState); }
+    function persistPrefsState() { savePrefsState(prefsState); }
+    function recordUsage(ref) {
+      if (!ref) return;
+      const current = usageState[ref] && typeof usageState[ref] === "object" ? usageState[ref] : {};
+      usageState[ref] = {
+        launchCount: Number(current.launchCount || 0) + 1,
+        lastLaunch: Date.now()
+      };
+      persistUsageState();
+    }
+    function applyStarState(line, starred) {
+      if (!line) return;
+      const starValue = starred ? "1" : "0";
+      line.setAttribute("data-starred", starValue);
+      const button = line.querySelector(".toggle-star");
+      if (!button) return;
+      button.setAttribute("data-starred", starValue);
+      button.classList.toggle("is-starred", starred);
+      const icon = button.querySelector("i");
+      if (icon) icon.className = starred ? "fa-solid fa-star" : "fa-regular fa-star";
+      const label = button.querySelector("span");
+      if (label) label.textContent = starred ? "Starred" : "Star";
+      button.title = starred ? "Unstar app" : "Star app";
+    }
+    function closeFloatingPanel() { if (floatingPanel) { floatingPanel.remove(); floatingPanel = null; } }
+    function openFloatingPanel(anchor, className) {
+      closeFloatingPanel();
+      const panel = document.createElement("div");
+      panel.className = "customokio-floating-panel" + (className ? " " + className : "");
+      document.body.appendChild(panel);
+      const rect = anchor.getBoundingClientRect();
+      panel.style.left = Math.max(12, rect.left) + "px";
+      panel.style.top = Math.min(window.innerHeight - 12, rect.bottom + 8) + "px";
+      floatingPanel = panel;
+      return panel;
+    }
+    function ensureSortable() {
+      if (window.Sortable) return Promise.resolve(window.Sortable);
+      if (sortablePromise) return sortablePromise;
+      sortablePromise = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "/sortable.min.js";
+        script.onload = function () { resolve(window.Sortable); };
+        script.onerror = function () { reject(new Error("Failed to load SortableJS")); };
+        document.head.appendChild(script);
+      });
+      return sortablePromise;
+    }
+    function getSortMode() { return sortSelect.tomselect ? normalizeSortMode(sortSelect.tomselect.getValue()) : normalizeSortMode(sortSelect.value); }
+    function getChildren(parentId) { return parentId ? (state.categories[parentId] ? state.categories[parentId].children : []) : state.root; }
+    function findParentId(ref) {
+      if (state.root.includes(ref)) return null;
+      for (const categoryId of Object.keys(state.categories)) if (state.categories[categoryId].children.includes(ref)) return categoryId;
+      return null;
+    }
+    function removeRef(ref, refs) {
+      const index = refs.indexOf(ref);
+      if (index >= 0) { refs.splice(index, 1); return true; }
+      for (const categoryId of Object.keys(state.categories)) if (removeRef(ref, state.categories[categoryId].children)) return true;
+      return false;
+    }
+    function addRef(parentId, ref, position) {
+      const refs = getChildren(parentId);
+      if (refs.includes(ref)) return;
+      position === "prepend" ? refs.unshift(ref) : refs.push(ref);
+    }
+    function isDescendant(categoryId, maybeDescendantId) {
+      if (!categoryId || !maybeDescendantId) return false;
+      const category = state.categories[categoryId];
+      if (!category) return false;
+      for (const childRef of category.children) {
+        if (childRef === maybeDescendantId) return true;
+        if (childRef.startsWith("cat-") && isDescendant(childRef, maybeDescendantId)) return true;
+      }
+      return false;
+    }
+    function categoryContainsRef(categoryId, ref) {
+      const category = state.categories[categoryId];
+      if (!category) return false;
+      for (const childRef of category.children) {
+        if (childRef === ref) return true;
+        if (childRef.startsWith("cat-") && categoryContainsRef(childRef, ref)) return true;
+      }
+      return false;
+    }
+    function setAllCategoriesCollapsed(collapsed) {
+      Object.keys(state.categories).forEach((categoryId) => {
+        state.categories[categoryId].collapsed = collapsed;
+      });
+    }
+    function collectCategoryCardRefs(categoryId) {
+      const refs = [];
+      const category = state.categories[categoryId];
+      if (!category) return refs;
+      category.children.forEach((childRef) => {
+        if (childRef.startsWith("cat-")) {
+          refs.push.apply(refs, collectCategoryCardRefs(childRef));
+        } else {
+          refs.push(childRef);
+        }
+      });
+      return refs;
+    }
+    function showToast(message) {
+      const toast = document.createElement("div");
+      toast.className = "customokio-toast";
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      window.setTimeout(function () { toast.remove(); }, 2200);
+    }
+    async function toggleStar(button) {
+      if (!button || button.dataset.pending === "1") return;
+      const appId = button.getAttribute("data-app-id");
+      if (!appId) return;
+      const currentlyStarred = button.getAttribute("data-starred") === "1";
+      const nextStarred = !currentlyStarred;
+      button.dataset.pending = "1";
+      try {
+        const response = await fetch("/apps/preferences/" + encodeURIComponent(appId), {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ starred: nextStarred })
+        });
+        const payload = await response.json().catch(function () { return {}; });
+        if (response.status === 404) {
+          throw new Error("CUSTOMOKIO_LOCAL_STAR_FALLBACK");
+        }
+        if (!response.ok || !payload || !payload.preference) {
+          throw new Error(payload && payload.error ? payload.error : "Failed to update app star");
+        }
+        const starred = payload.preference.starred ? "1" : "0";
+        const line = button.closest(".line");
+        if (line) {
+          applyStarState(line, payload.preference.starred);
+          line.setAttribute("data-launch-count-total", String(payload.preference.launch_count_total || 0));
+          line.setAttribute("data-last-launch-at", payload.preference.last_launch_at || "");
+        }
+        render();
+      } catch (error) {
+        if (error && error.message === "CUSTOMOKIO_LOCAL_STAR_FALLBACK") {
+          prefsState[appId] = Object.assign({}, prefsState[appId] || {}, { starred: nextStarred });
+          persistPrefsState();
+          const line = button.closest(".line");
+          if (line) applyStarState(line, nextStarred);
+          render();
+          showToast("Star saved locally.");
+        } else {
+          alert(error && error.message ? error.message : "Failed to update app star");
+        }
+      } finally {
+        delete button.dataset.pending;
+      }
+    }
+    function canMoveRefToParent(ref, parentId) {
+      if (!ref || ref === parentId) return false;
+      if (ref.startsWith("cat-") && isDescendant(ref, parentId)) return false;
+      return true;
+    }
+    function destroySortables() {
+      sortables.forEach((instance) => {
+        try { instance.destroy(); } catch (error) {}
+      });
+      sortables = [];
+    }
+    function rebuildStateFromDom() {
+      const next = {
+        version: 3,
+        layoutMode: state.layoutMode,
+        customColors: (state.customColors || []).slice(),
+        root: [],
+        categories: {}
+      };
+      function readList(list) {
+        const refs = [];
+        Array.from(list.children).forEach((child) => {
+          const ref = child.getAttribute("data-ref");
+          if (!ref) return;
+          refs.push(ref);
+          if (ref.startsWith("cat-")) {
+            const prev = state.categories[ref] || createCategory("Category", { id: ref });
+            const category = createCategory(prev.name, {
+              id: ref,
+              icon: prev.icon,
+              color: prev.color,
+              collapsed: prev.collapsed,
+              sortMode: normalizeSortMode(prev.sortMode || "manual"),
+              itemLayout: prev.itemLayout === "grid" ? "grid" : "list",
+              children: []
+            });
+            const nestedList = child.querySelector(":scope > .customokio-category-dropzone > .customokio-list");
+            category.children = nestedList ? readList(nestedList) : [];
+            next.categories[ref] = category;
+          }
+        });
+        return refs;
+      }
+      const rootList = groupHost.querySelector(":scope > .customokio-root-dropzone > .customokio-list");
+      next.root = rootList ? readList(rootList) : [];
+      state = sanitizeState(next, cardRefs);
+      persistState();
+      render();
+    }
+    function initSortables() {
+      destroySortables();
+      ensureSortable().then((Sortable) => {
+        groupHost.querySelectorAll(".customokio-list").forEach((list) => {
+          const instance = new Sortable(list, {
+            group: "customokio",
+            animation: 150,
+            forceFallback: true,
+            fallbackOnBody: true,
+            fallbackTolerance: 3,
+            emptyInsertThreshold: 20,
+            swapThreshold: 0.65,
+            draggable: ".line, .customokio-category-shell",
+            handle: ".customokio-category-header, .line",
+            filter: ".customokio-category-actions, .customokio-category-actions *, .btn, .btn *",
+            preventOnFilter: false,
+            onStart: function (event) {
+              document.body.classList.add("customokio-dragging");
+              if (event.item) event.item.classList.add("customokio-is-dragging");
+            },
+            onMove: function (event) {
+              const ref = event.dragged && event.dragged.getAttribute("data-ref");
+              const parentId = event.to && event.to.getAttribute("data-parent-id") || null;
+              if (canMoveRefToParent(ref, parentId)) return true;
+              if (ref && ref.startsWith("cat-") && isDescendant(ref, parentId)) {
+                showToast("You cannot place a category inside one of its descendants.");
+              }
+              return false;
+            },
+            onEnd: function () {
+              document.body.classList.remove("customokio-dragging");
+              document.querySelectorAll(".customokio-is-dragging").forEach((node) => node.classList.remove("customokio-is-dragging"));
+              rebuildStateFromDom();
+            }
+          });
+          sortables.push(instance);
+        });
+      }).catch((error) => {
+        console.error(error);
+        showToast("Drag and drop failed to initialize.");
+      });
+    }
+    function refreshFilterOptions() {
+      const options = [{ value: "all", label: "All categories" }];
+      state.root.forEach((ref) => { if (ref.startsWith("cat-") && state.categories[ref]) options.push({ value: ref, label: state.categories[ref].name }); });
+      const nextFilter = options.some((option) => option.value === activeFilter) ? activeFilter : "all";
+      filterSelect.innerHTML = "";
+      options.forEach((option) => {
+        const node = document.createElement("option");
+        node.value = option.value;
+        node.textContent = option.label;
+        if (option.value === nextFilter) node.selected = true;
+        filterSelect.appendChild(node);
+      });
+      activeFilter = nextFilter;
+      if (filterSelect.tomselect) {
+        filterSelect.tomselect.clearOptions();
+        options.forEach((option) => filterSelect.tomselect.addOption({ value: option.value, text: option.label }));
+        filterSelect.tomselect.setValue(activeFilter, true);
+        filterSelect.tomselect.refreshOptions(false);
+      }
+    }
+    function getEffectiveSortMode(parentId) {
+      const globalMode = getSortMode();
+      if (parentId && state.categories[parentId]) {
+        if (globalMode === "manual") return normalizeSortMode(state.categories[parentId].sortMode || "manual");
+      }
+      return globalMode;
+    }
+    function getSortedRefs(refs, parentId) {
+      const mode = getEffectiveSortMode(parentId);
+      if (mode === "manual") return refs.slice();
+      const categories = refs.filter((ref) => ref.startsWith("cat-"));
+      const cards = refs.filter((ref) => !ref.startsWith("cat-"));
+      if (mode === "az") categories.sort((a, b) => state.categories[a].name.localeCompare(state.categories[b].name));
+      cards.sort((a, b) => {
+        const cardA = cardMap.get(a);
+        const cardB = cardMap.get(b);
+        if (!cardA || !cardB) return 0;
+        const serverA = parseCardMeta(cardA.card, cardA.name);
+        const serverB = parseCardMeta(cardB.card, cardB.name);
+        const localA = usageState[a] || {};
+        const localB = usageState[b] || {};
+        cardA.card.dataset.customokioLaunchCount = String(Math.max(serverA.launchCount || 0, Number(localA.launchCount || 0)));
+        cardB.card.dataset.customokioLaunchCount = String(Math.max(serverB.launchCount || 0, Number(localB.launchCount || 0)));
+        cardA.card.dataset.customokioLastLaunch = String(Math.max(serverA.lastLaunch || 0, Number(localA.lastLaunch || 0)));
+        cardB.card.dataset.customokioLastLaunch = String(Math.max(serverB.lastLaunch || 0, Number(localB.lastLaunch || 0)));
+        return compareCards(cardA.card, cardB.card, mode, cardA.name, cardB.name);
+      });
+      return categories.concat(cards);
+    }
+    function matchesSearch(ref, query) {
+      if (!query) return true;
+      if (ref.startsWith("cat-")) return String(state.categories[ref].name || "").toLowerCase().includes(query);
+      const entry = cardMap.get(ref);
+      if (!entry) return false;
+      return String(entry.name || "").toLowerCase().includes(query) || String(entry.card.getAttribute("data-description") || "").toLowerCase().includes(query);
+    }
+    function ensureCard(ref) { return cardMap.has(ref) ? cardMap.get(ref).card : null; }
+
+    function openColorPanel(button, category) {
+      const panel = openFloatingPanel(button, "customokio-color-panel");
+      panel.addEventListener("click", function (event) { event.stopPropagation(); });
+      function applyColorLive(nextColor, persist) {
+        category.color = nextColor;
+        const shell = document.querySelector('[data-category-id="' + category.id + '"]');
+        if (shell) {
+          shell.style.setProperty("--customokio-category-color", nextColor);
+        }
+        if (persist) {
+          persistState();
+          render();
+          window.setTimeout(function () {
+            const nextButton = document.querySelector('[data-category-id="' + category.id + '"] .customokio-category-actions [data-action="color"]');
+            if (nextButton) openColorPanel(nextButton, state.categories[category.id]);
+          }, 0);
+        }
+      }
+      const grid = document.createElement("div");
+      grid.className = "customokio-color-grid";
+      COLORS.concat(state.customColors || []).forEach((color, index) => {
+        const wrap = document.createElement("div");
+        wrap.className = "customokio-color-swatch-wrap";
+        const swatch = document.createElement("button");
+        swatch.type = "button";
+        swatch.className = "customokio-color-swatch";
+        swatch.style.background = color;
+        swatch.addEventListener("click", function () {
+          applyColorLive(color, true);
+        });
+        wrap.appendChild(swatch);
+        if (index >= COLORS.length) {
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "customokio-color-remove";
+          remove.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+          remove.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            state.customColors = (state.customColors || []).filter((value) => value !== color);
+            persistState();
+            render();
+            window.setTimeout(function () {
+              const nextButton = document.querySelector('[data-category-id="' + category.id + '"] .customokio-category-actions [data-action="color"]');
+              if (nextButton) openColorPanel(nextButton, state.categories[category.id]);
+            }, 0);
+          });
+          wrap.appendChild(remove);
+        }
+        grid.appendChild(wrap);
+      });
+      const custom = document.createElement("label");
+      custom.className = "customokio-color-swatch customokio-color-custom";
+      custom.innerHTML = '<i class="fa-solid fa-plus"></i><input type="color" class="customokio-color-native" value="' + normalizeColor(category.color) + '">';
+      custom.querySelector("input").addEventListener("input", function (event) {
+        const nextColor = normalizeColor(event.target.value);
+        applyColorLive(nextColor, false);
+      });
+      custom.querySelector("input").addEventListener("change", function (event) {
+        const nextColor = normalizeColor(event.target.value);
+        if (!(state.customColors || []).includes(nextColor)) {
+          state.customColors = [nextColor].concat(state.customColors || []).slice(0, 24);
+        }
+        applyColorLive(nextColor, true);
+      });
+      panel.appendChild(grid);
+      panel.appendChild(custom);
+    }
+
+    function openIconPanel(button, category) {
+      const panel = openFloatingPanel(button, "customokio-icon-panel");
+      const grid = document.createElement("div");
+      grid.className = "customokio-emoji-grid";
+      EMOJIS.forEach((emoji) => {
+        const emojiButton = document.createElement("button");
+        emojiButton.type = "button";
+        emojiButton.className = "btn";
+        emojiButton.textContent = emoji;
+        emojiButton.addEventListener("click", function () {
+          category.icon = emoji;
+          persistState();
+          render();
+          closeFloatingPanel();
+        });
+        grid.appendChild(emojiButton);
+      });
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "customokio-panel-input";
+      input.maxLength = 4;
+      input.value = category.icon || "📁";
+      const save = document.createElement("button");
+      save.type = "button";
+      save.className = "btn";
+      save.textContent = "Save";
+      save.addEventListener("click", function () {
+        const value = String(input.value || "").trim();
+        if (!value) return;
+        category.icon = value.slice(0, 4);
+        persistState();
+        render();
+        closeFloatingPanel();
+      });
+      panel.appendChild(grid);
+      panel.appendChild(input);
+      panel.appendChild(save);
+      input.focus();
+    }
+
+    function renderCategory(ref, depth, query) {
+      const category = state.categories[ref];
+      if (!category) return null;
+      const topLevelFolder = state.layoutMode === "folder" && depth === 0;
+      const shell = document.createElement("section");
+      shell.className = "customokio-category-shell depth-" + depth + " " + (topLevelFolder ? "layout-folder" : "layout-stack") + (category.collapsed && !query ? " collapsed" : "");
+      shell.dataset.categoryId = ref;
+      shell.dataset.ref = ref;
+      shell.style.setProperty("--customokio-category-color", category.color || DEFAULT_CATEGORY_COLOR);
+
+      const header = document.createElement("div");
+      header.className = "customokio-category-header";
+      header.addEventListener("dblclick", function (event) {
+        if (event.target.closest(".customokio-category-actions")) return;
+        category.collapsed = !category.collapsed;
+        persistState();
+        render();
+      });
+
+      const title = document.createElement("div");
+      title.className = "customokio-category-title-row";
+      title.innerHTML = '<span class="customokio-category-icon"></span><span class="customokio-category-title"></span><span class="customokio-category-meta"></span>';
+      title.querySelector(".customokio-category-icon").textContent = category.icon || "📁";
+      title.querySelector(".customokio-category-title").textContent = category.name;
+      title.querySelector(".customokio-category-meta").textContent = String(category.children.length);
+      header.appendChild(title);
+
+      const actions = document.createElement("div");
+      actions.className = "customokio-category-actions";
+      actions.innerHTML = '<button type="button" class="btn" data-action="subgroup" title="Add subgroup"><i class="fa-solid fa-folder-plus"></i></button><button type="button" class="btn" data-action="sort" title="Sort category"><i class="fa-solid fa-arrow-down-a-z"></i></button><button type="button" class="btn" data-action="items" title="Category view"><i class="fa-solid fa-table-cells"></i></button><button type="button" class="btn" data-action="color" title="Set color"><i class="fa-solid fa-palette"></i></button><button type="button" class="btn" data-action="icon" title="Set icon"><i class="fa-regular fa-image"></i></button><button type="button" class="btn" data-action="rename" title="Rename"><i class="fa-solid fa-pen"></i></button><button type="button" class="btn" data-action="delete" title="Delete"><i class="fa-regular fa-trash-can"></i></button>';
+      actions.addEventListener("click", function (event) {
+        const button = event.target.closest("button");
+        if (!button) return;
+        event.preventDefault();
+        event.stopPropagation();
+        const action = button.getAttribute("data-action");
+        if (action === "subgroup") {
+          const name = window.prompt("Subcategory name");
+          if (!name || !name.trim()) return;
+          const next = createCategory(name.trim(), { collapsed: false });
+          state.categories[next.id] = next;
+          addRef(ref, next.id, "prepend");
+          persistState();
+          render();
+        } else if (action === "sort") {
+          const panel = openFloatingPanel(button, "customokio-sort-panel");
+          [
+            { value: "manual", label: "Manual order" },
+            { value: "most_used", label: "Most used" },
+            { value: "last_opened", label: "Last opened" },
+            { value: "az", label: "A-Z" }
+          ].forEach((option) => {
+            const sortButton = document.createElement("button");
+            sortButton.type = "button";
+            sortButton.className = "btn";
+            sortButton.textContent = option.label + (category.sortMode === option.value ? " •" : "");
+            sortButton.addEventListener("click", function () {
+              category.sortMode = option.value;
+              persistState();
+              render();
+              closeFloatingPanel();
+            });
+            panel.appendChild(sortButton);
+          });
+          const resetButton = document.createElement("button");
+          resetButton.type = "button";
+          resetButton.className = "btn";
+          resetButton.textContent = "Reset usage";
+          resetButton.addEventListener("click", function () {
+            collectCategoryCardRefs(ref).forEach((cardRef) => {
+              delete usageState[cardRef];
+              const cardEntry = cardMap.get(cardRef);
+              if (cardEntry && cardEntry.card) {
+                cardEntry.card.removeAttribute("data-customokio-launch-count");
+                cardEntry.card.removeAttribute("data-customokio-last-launch");
+              }
+            });
+            persistUsageState();
+            render();
+            closeFloatingPanel();
+            showToast("Category usage reset.");
+          });
+          panel.appendChild(resetButton);
+        } else if (action === "items") {
+          const panel = openFloatingPanel(button, "customokio-items-panel");
+          [
+            { value: "list", label: "List view" },
+            { value: "grid", label: "Grid view" }
+          ].forEach((option) => {
+            const layoutButton = document.createElement("button");
+            layoutButton.type = "button";
+            layoutButton.className = "btn";
+            layoutButton.textContent = option.label + (category.itemLayout === option.value ? " *" : "");
+            layoutButton.addEventListener("click", function () {
+              category.itemLayout = option.value;
+              persistState();
+              render();
+              closeFloatingPanel();
+            });
+            panel.appendChild(layoutButton);
+          });
+        } else if (action === "rename") {
+          const nextName = window.prompt("Rename category", category.name);
+          if (!nextName || !nextName.trim()) return;
+          category.name = nextName.trim();
+          persistState();
+          render();
+        } else if (action === "delete") {
+          const parentId = findParentId(ref);
+          const siblings = getChildren(parentId);
+          const index = siblings.indexOf(ref);
+          if (index < 0) return;
+          siblings.splice(index, 1, ...category.children);
+          delete state.categories[ref];
+          persistState();
+          render();
+        } else if (action === "color") {
+          openColorPanel(button, category);
+        } else if (action === "icon") {
+          openIconPanel(button, category);
+        }
+      });
+      header.appendChild(actions);
+      shell.appendChild(header);
+
+      const dropzone = document.createElement("div");
+      dropzone.className = "customokio-category-dropzone";
+      shell.appendChild(dropzone);
+      const list = document.createElement("div");
+      list.className = "customokio-list customokio-items-" + (category.itemLayout === "grid" ? "grid" : "list");
+      list.dataset.parentId = ref;
+      dropzone.appendChild(list);
+      const empty = document.createElement("div");
+      empty.className = "customokio-empty-dropzone";
+      empty.textContent = "Drop apps or categories here.";
+      dropzone.appendChild(empty);
+
+      let visibleChildren = 0;
+      getSortedRefs(category.children, ref).forEach((childRef) => {
+        if (activeFilter !== "all" && ref !== activeFilter && !categoryContainsRef(ref, activeFilter)) return;
+        if (childRef.startsWith("cat-")) {
+          const nested = renderCategory(childRef, depth + 1, query);
+          if (!nested) return;
+          if (!matchesSearch(childRef, query) && !nested.dataset.hasVisibleChildren) nested.style.display = "none"; else visibleChildren += 1;
+          list.appendChild(nested);
+          return;
+        }
+        const card = ensureCard(childRef);
+        if (!card) return;
+        const visible = matchesSearch(childRef, query);
+        card.style.display = visible ? "" : "none";
+        card.dataset.ref = childRef;
+        list.appendChild(card);
+        if (visible) visibleChildren += 1;
+      });
+      empty.hidden = list.children.length > 0;
+      if (visibleChildren > 0) shell.dataset.hasVisibleChildren = "1";
+      return shell;
+    }
+
+    function render() {
+      destroySortables();
+      refreshFilterOptions();
+      const query = String(searchForm.querySelector("input[type='search']")?.value || "").trim().toLowerCase();
+      groupHost.innerHTML = "";
+      groupHost.classList.toggle("folder-mode", state.layoutMode === "folder");
+      runningContainer.style.display = "none";
+      if (notRunningContainer) notRunningContainer.style.display = "none";
+
+      const root = document.createElement("div");
+      root.className = "customokio-root-dropzone";
+      groupHost.appendChild(root);
+      const rootList = document.createElement("div");
+      rootList.className = "customokio-list customokio-root-items-" + (state.layoutMode === "folder" ? "grid" : "list");
+      rootList.dataset.parentId = "";
+      root.appendChild(rootList);
+
+      getSortedRefs(state.root, null).forEach((ref) => {
+        if (activeFilter !== "all" && ref !== activeFilter && !categoryContainsRef(ref, activeFilter)) return;
+        if (ref.startsWith("cat-")) {
+          const category = renderCategory(ref, 0, query);
+          if (!category) return;
+          if (!matchesSearch(ref, query) && !category.dataset.hasVisibleChildren) category.style.display = "none";
+          rootList.appendChild(category);
+          return;
+        }
+        const card = ensureCard(ref);
+        if (!card) return;
+        card.style.display = matchesSearch(ref, query) ? "" : "none";
+        card.dataset.ref = ref;
+        rootList.appendChild(card);
+      });
+      initSortables();
+    }
+
+    Array.from(sortSelect.options).forEach((option) => {
+      if (option.value === "category_az") option.remove();
+    });
+    if (!Array.from(sortSelect.options).some((entry) => entry.value === "manual")) {
+      const manualOption = document.createElement("option");
+      manualOption.value = "manual";
+      manualOption.textContent = "Manual";
+      sortSelect.appendChild(manualOption);
+    }
+    sortSelect.value = "manual";
+    if (sortSelect.tomselect) {
+      if (sortSelect.tomselect.options["category_az"]) {
+        sortSelect.tomselect.removeOption("category_az");
+      }
+      if (!sortSelect.tomselect.options.manual) {
+        sortSelect.tomselect.addOption({ value: "manual", text: "Manual" });
+      }
+      sortSelect.tomselect.setValue("manual", true);
+      sortSelect.tomselect.refreshOptions(false);
+      sortSelect.tomselect.sync();
+    }
+
+    cardEntries.forEach((entry) => {
+      const localPrefs = prefsState[entry.ref];
+      if (localPrefs && typeof localPrefs.starred === "boolean") {
+        applyStarState(entry.card, localPrefs.starred);
+      }
+      entry.card.setAttribute("draggable", "false");
+      entry.card.querySelectorAll("img, svg").forEach((node) => node.setAttribute("draggable", "false"));
+      entry.card.addEventListener("dragstart", function (event) {
+        event.preventDefault();
+      });
+      entry.card.addEventListener("mousedown", function () {
+        if (document.activeElement && typeof document.activeElement.blur === "function") document.activeElement.blur();
+      });
+      entry.card.addEventListener("click", function (event) {
+        const ignored = event.target.closest(".toggle-star, .open-menu, .edit-menu, .copy-menu, .move-menu, .del, .shutdown");
+        if (ignored) return;
+        recordUsage(entry.ref);
+      }, true);
+    });
+
+    if (typeof window.TomSelect === "function" && !filterSelect.tomselect) {
+      new TomSelect(filterSelect, {
+        create: false,
+        maxItems: 1,
+        allowEmptyOption: false,
+        searchField: [],
+        controlInput: null,
+        dropdownParent: filterWrap
+      });
+    }
+
+    document.addEventListener("click", function (event) {
+      if (floatingPanel && !floatingPanel.contains(event.target) && !event.target.closest(".customokio-category-actions") && !event.target.closest(".customokio-toolbar")) closeFloatingPanel();
+    });
+    document.addEventListener("click", function (event) {
+      const button = event.target.closest(".toggle-star");
+      if (!button) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+      toggleStar(button);
+    }, true);
+
+    toolbar.addEventListener("click", function (event) {
+      const button = event.target.closest("button");
+      if (!button) return;
+      const action = button.getAttribute("data-action");
+      if (action === "new") {
+        const name = window.prompt("Category name");
+        if (!name || !name.trim()) return;
+        const category = createCategory(name.trim(), { collapsed: false });
+        state.categories[category.id] = category;
+        addRef(null, category.id, "prepend");
+        persistState();
+        render();
+        return;
+      }
+      if (action === "layout") {
+        const panel = openFloatingPanel(button, "customokio-layout-panel");
+        ["stack", "folder"].forEach((layout) => {
+          const layoutButton = document.createElement("button");
+          layoutButton.type = "button";
+          layoutButton.className = "btn";
+          layoutButton.textContent = layout === "stack" ? "Stacked view" : "Folder view";
+          layoutButton.addEventListener("click", function () {
+            state.layoutMode = layout;
+            persistState();
+            render();
+            closeFloatingPanel();
+          });
+          panel.appendChild(layoutButton);
+        });
+        return;
+      }
+      if (action === "collapse-all") {
+        setAllCategoriesCollapsed(true);
+        persistState();
+        render();
+        return;
+      }
+      if (action === "expand-all") {
+        setAllCategoriesCollapsed(false);
+        persistState();
+        render();
+        return;
+      }
+      if (action === "export") {
+        const blob = new Blob([JSON.stringify(clone(state), null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "customokio-layout.json";
+        link.click();
+        URL.revokeObjectURL(url);
+        return;
+      }
+      if (action === "import") { importInput.click(); return; }
+      if (action === "reset") {
+        state = createDefaultState(cardRefs);
+        persistState();
+        render();
+      }
+    });
+
+    importInput.addEventListener("change", function (event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function () {
+        try {
+          state = sanitizeState(JSON.parse(String(reader.result || "{}")), cardRefs);
+          persistState();
+          render();
+          showToast("Layout imported.");
+        } catch (error) {
+          console.error("Failed to import layout", error);
+          showToast("Import failed.");
+        }
+      };
+      reader.readAsText(file);
+      importInput.value = "";
+    });
+
+    searchForm.addEventListener("input", function () { window.requestAnimationFrame(render); });
+    sortSelect.addEventListener("change", render);
+    if (sortSelect.tomselect) {
+      sortSelect.tomselect.on("change", function (value) { sortSelect.value = value; render(); });
+      sortSelect.tomselect.on("dropdown_close", render);
+    }
+    filterSelect.addEventListener("change", function () { activeFilter = filterSelect.value || "all"; render(); });
+    if (filterSelect.tomselect) filterSelect.tomselect.on("change", function (value) { activeFilter = value || "all"; render(); });
+
+    window.Customokio = {
+      getState: function () { return clone(state); },
+      resetLayout: function () { state = createDefaultState(cardRefs); persistState(); render(); }
+    };
+
+    render();
+  }
+
+  document.addEventListener("DOMContentLoaded", setup);
+})();
