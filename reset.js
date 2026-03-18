@@ -1,34 +1,115 @@
+const os = require("os")
+const path = require("path")
+
+const normalize = (value) => value.replace(/\\/g, "/")
+const q = (value) => JSON.stringify(value)
+
+const externalBackupRoot = normalize(process.platform === "win32"
+  ? path.resolve(os.homedir(), "AppData", "Roaming", "Pinokio", "Customokio", "backup")
+  : process.platform === "darwin"
+    ? path.resolve(os.homedir(), "Library", "Application Support", "Pinokio", "Customokio", "backup")
+    : path.resolve(os.homedir(), ".config", "Pinokio", "Customokio", "backup"))
+
+const backups = {
+  index: {
+    live: "../../web/views/index.ejs",
+    external: normalize(path.resolve(externalBackupRoot, "index.ejs")),
+    sidecar: "../../web/views/index.ejs.customokio.bak",
+    legacy: "state/backup/index.ejs"
+  },
+  mainSidebar: {
+    live: "../../web/views/partials/main_sidebar.ejs",
+    external: normalize(path.resolve(externalBackupRoot, "partials", "main_sidebar.ejs")),
+    sidecar: "../../web/views/partials/main_sidebar.ejs.customokio.bak",
+    legacy: "state/backup/partials/main_sidebar.ejs"
+  },
+  peerAccessPoints: {
+    live: "../../web/views/partials/peer_access_points.ejs",
+    external: normalize(path.resolve(externalBackupRoot, "partials", "peer_access_points.ejs")),
+    sidecar: "../../web/views/partials/peer_access_points.ejs.customokio.bak",
+    legacy: "state/backup/partials/peer_access_points.ejs"
+  }
+}
+
 module.exports = {
   run: [
     {
-      when: "{{exists('state/backup/index.ejs')}}",
+      when: `{{exists(${q(backups.index.external)})}}`,
       method: "fs.copy",
       params: {
-        src: "state/backup/index.ejs",
-        dest: "../../web/views/index.ejs"
+        src: backups.index.external,
+        dest: backups.index.live
       }
     },
     {
-      when: "{{exists('state/backup/partials/main_sidebar.ejs')}}",
+      when: `{{!exists(${q(backups.index.external)}) && exists(${q(backups.index.sidecar)})}}`,
       method: "fs.copy",
       params: {
-        src: "state/backup/partials/main_sidebar.ejs",
-        dest: "../../web/views/partials/main_sidebar.ejs"
+        src: backups.index.sidecar,
+        dest: backups.index.live
       }
     },
     {
-      when: "{{exists('state/backup/partials/peer_access_points.ejs')}}",
+      when: `{{!exists(${q(backups.index.external)}) && !exists(${q(backups.index.sidecar)}) && exists(${q(backups.index.legacy)})}}`,
       method: "fs.copy",
       params: {
-        src: "state/backup/partials/peer_access_points.ejs",
-        dest: "../../web/views/partials/peer_access_points.ejs"
+        src: backups.index.legacy,
+        dest: backups.index.live
       }
     },
     {
-      when: "{{!exists('state/backup/index.ejs') && exists('../../web/views/index.ejs')}}",
+      when: `{{exists(${q(backups.mainSidebar.external)})}}`,
+      method: "fs.copy",
+      params: {
+        src: backups.mainSidebar.external,
+        dest: backups.mainSidebar.live
+      }
+    },
+    {
+      when: `{{!exists(${q(backups.mainSidebar.external)}) && exists(${q(backups.mainSidebar.sidecar)})}}`,
+      method: "fs.copy",
+      params: {
+        src: backups.mainSidebar.sidecar,
+        dest: backups.mainSidebar.live
+      }
+    },
+    {
+      when: `{{!exists(${q(backups.mainSidebar.external)}) && !exists(${q(backups.mainSidebar.sidecar)}) && exists(${q(backups.mainSidebar.legacy)})}}`,
+      method: "fs.copy",
+      params: {
+        src: backups.mainSidebar.legacy,
+        dest: backups.mainSidebar.live
+      }
+    },
+    {
+      when: `{{exists(${q(backups.peerAccessPoints.external)})}}`,
+      method: "fs.copy",
+      params: {
+        src: backups.peerAccessPoints.external,
+        dest: backups.peerAccessPoints.live
+      }
+    },
+    {
+      when: `{{!exists(${q(backups.peerAccessPoints.external)}) && exists(${q(backups.peerAccessPoints.sidecar)})}}`,
+      method: "fs.copy",
+      params: {
+        src: backups.peerAccessPoints.sidecar,
+        dest: backups.peerAccessPoints.live
+      }
+    },
+    {
+      when: `{{!exists(${q(backups.peerAccessPoints.external)}) && !exists(${q(backups.peerAccessPoints.sidecar)}) && exists(${q(backups.peerAccessPoints.legacy)})}}`,
+      method: "fs.copy",
+      params: {
+        src: backups.peerAccessPoints.legacy,
+        dest: backups.peerAccessPoints.live
+      }
+    },
+    {
+      when: `{{!exists(${q(backups.index.external)}) && !exists(${q(backups.index.sidecar)}) && !exists(${q(backups.index.legacy)}) && exists(${q(backups.index.live)})}}`,
       method: "fs.rm",
       params: {
-        path: "../../web/views/index.ejs"
+        path: backups.index.live
       }
     },
     {
@@ -53,17 +134,17 @@ module.exports = {
       }
     },
     {
-      when: "{{!exists('state/backup/partials/main_sidebar.ejs') && exists('../../web/views/partials/main_sidebar.ejs')}}",
+      when: `{{!exists(${q(backups.mainSidebar.external)}) && !exists(${q(backups.mainSidebar.sidecar)}) && !exists(${q(backups.mainSidebar.legacy)}) && exists(${q(backups.mainSidebar.live)})}}`,
       method: "fs.rm",
       params: {
-        path: "../../web/views/partials/main_sidebar.ejs"
+        path: backups.mainSidebar.live
       }
     },
     {
-      when: "{{!exists('state/backup/partials/peer_access_points.ejs') && exists('../../web/views/partials/peer_access_points.ejs')}}",
+      when: `{{!exists(${q(backups.peerAccessPoints.external)}) && !exists(${q(backups.peerAccessPoints.sidecar)}) && !exists(${q(backups.peerAccessPoints.legacy)}) && exists(${q(backups.peerAccessPoints.live)})}}`,
       method: "fs.rm",
       params: {
-        path: "../../web/views/partials/peer_access_points.ejs"
+        path: backups.peerAccessPoints.live
       }
     },
     {
@@ -76,7 +157,7 @@ module.exports = {
     {
       method: "notify",
       params: {
-        html: "Customokio customization removed. Refresh the Pinokio home page to restore the previous layout."
+        html: "Customokio customization removed. Original files were restored from AppData, .customokio.bak sidecars, or legacy backups when available."
       }
     }
   ]

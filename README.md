@@ -34,6 +34,7 @@ Feature highlights:
 - Assign category icons.
 - Export and import the layout as JSON.
 - Restore the default Pinokio home page.
+- Open the launcher to the README by default so `Apply`, `Reapply`, and `Restore Default` stay manual actions.
 
 ![Customokio Hero Overview](assets/home7_1280x640.png)
 
@@ -76,21 +77,43 @@ Use stacked layout when you want everything expanded vertically, or folder layou
 
 ![Folder Category Layout](assets/home6.png)
 
+## 📝 Recent Updates
+
+- Added safer backup handling for Pinokio home overrides:
+  - primary backups now live in `%APPDATA%\Pinokio\Customokio\backup\`
+  - `.customokio.bak` sidecars are also written next to the live override files
+  - restore now checks AppData backups first, then sidecars, then legacy `state/backup` files
+- Added an AppData `manifest.json` so backup locations remain easy to inspect manually.
+- Changed the launcher so it opens to `README` by default instead of auto-selecting `Apply` or `Reapply`.
+- Improved removal guidance and restore behavior so uninstalling Customokio is less likely to strand a broken override state.
+- Fixed the category count badge so it sizes correctly and no longer collides with controls in folder/grid mode.
+
 ## ⚙️ How Installation Works
+
+Customokio now keeps two backup copies of any existing Pinokio home overrides before it replaces them:
+
+- a primary backup in `%APPDATA%\Pinokio\Customokio\backup\`
+- a `.customokio.bak` sidecar next to each live override file in `PINOKIO_HOME/web/views/...`
 
 When you click `Apply`, the launcher:
 
-- backs up any existing `web/views/index.ejs`
-- backs up the sidebar partials if they already exist
+- backs up any existing `web/views/index.ejs` into `%APPDATA%\Pinokio\Customokio\backup\index.ejs`
+- backs up the sidebar partials into `%APPDATA%\Pinokio\Customokio\backup\partials\...`
+- writes `.customokio.bak` sidecar backups next to the live override files for convenience
+- writes `manifest.json` into the AppData backup folder
 - copies the Customokio home template into `PINOKIO_HOME/web/views/index.ejs`
 - copies the required partials into `PINOKIO_HOME/web/views/partials/`
 - copies the client assets into `PINOKIO_HOME/web/public/`
 
 When you click `Restore Default`, the launcher:
 
-- restores the backed-up template and partials if they existed
+- restores the backed-up template and partials from AppData first
+- falls back to the `.customokio.bak` sidecars if the AppData backup is unavailable
+- falls back to legacy `state/backup` files if they still exist from an older install
 - removes the Customokio assets from `PINOKIO_HOME/web/public/`
 - removes its own temporary install state
+
+If the override files under `PINOKIO_HOME/web/views/...` are completely missing, Pinokio should fall back to its built-in bundled home UI. The broken state is when a custom `index.ejs` override still exists but the partials it depends on are missing.
 
 ## ✋ How To Use
 
@@ -116,6 +139,7 @@ When you click `Restore Default`, the launcher:
    - import layout
    - reset layout
    - filter by category
+8. If you want to remove Customokio safely, click `Restore Default` before uninstalling the package.
 
 ## 🎯 Best For
 
@@ -141,6 +165,13 @@ Customokio's home-screen behavior is local to the browser UI:
 - it does not send your category layout, sorting, stars, or other customization state to any external server
 - it does not read, use, or transmit your stored credentials, API keys, login tokens, or similar secrets
 - it reorganizes the existing Pinokio home page only and keeps its own state in local browser storage
+
+Backup copies of the overridden home files are stored locally on your machine:
+
+- primary backup: `%APPDATA%\Pinokio\Customokio\backup\`
+- convenience sidecars: `PINOKIO_HOME/web/views/*.customokio.bak`
+
+These backup files are not uploaded anywhere. The AppData `manifest.json` only records backup file locations and update metadata.
 
 The repository itself does not need your machine name, user name, LAN IP, or local paths to work.
 

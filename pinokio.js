@@ -39,7 +39,6 @@ module.exports = {
 
     if (installed) {
       return [{
-        default: true,
         icon: "fa-solid fa-rotate",
         text: "Reapply",
         href: "update.js"
@@ -48,6 +47,7 @@ module.exports = {
         text: "Restore Default",
         href: "reset.js"
       }, {
+        default: true,
         icon: "fa-solid fa-book",
         text: "README",
         href: "README.md?raw=true"
@@ -55,11 +55,11 @@ module.exports = {
     }
 
     return [{
-      default: true,
       icon: "fa-solid fa-wand-magic-sparkles",
       text: "Apply",
       href: "install.js"
     }, {
+      default: true,
       icon: "fa-solid fa-book",
       text: "README",
       href: "README.md?raw=true"
