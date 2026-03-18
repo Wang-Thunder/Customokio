@@ -35,6 +35,7 @@ Feature highlights:
 - Export and import the layout as JSON.
 - Restore the default Pinokio home page.
 - Open the launcher to the README by default so `Apply`, `Reapply`, and `Restore Default` stay manual actions.
+- Choose between `Reapply` for the current local version and `Update + Reapply` to pull the latest package changes from GitHub first.
 
 ![Customokio Hero Overview](assets/home7_1280x640.png)
 
@@ -85,6 +86,9 @@ Use stacked layout when you want everything expanded vertically, or folder layou
   - restore now checks AppData backups first, then sidecars, then legacy `state/backup` files
 - Added an AppData `manifest.json` so backup locations remain easy to inspect manually.
 - Changed the launcher so it opens to `README` by default instead of auto-selecting `Apply` or `Reapply`.
+- Split manual maintenance into two actions:
+  - `Reapply` reinstalls the current local Customokio files
+  - `Update + Reapply` runs `git pull` first, then reinstalls
 - Improved removal guidance and restore behavior so uninstalling Customokio is less likely to strand a broken override state.
 - Fixed the category count badge so it sizes correctly and no longer collides with controls in folder/grid mode.
 
@@ -115,6 +119,12 @@ When you click `Restore Default`, the launcher:
 
 If the override files under `PINOKIO_HOME/web/views/...` are completely missing, Pinokio should fall back to its built-in bundled home UI. The broken state is when a custom `index.ejs` override still exists but the partials it depends on are missing.
 
+Action summary:
+
+- `Apply`: first-time installation
+- `Reapply`: reinstall the current local Customokio files
+- `Update + Reapply`: run `git pull`, then reinstall the latest package files
+
 ## ✋ How To Use
 
 1. Open the Customokio package in Pinokio.
@@ -140,6 +150,7 @@ If the override files under `PINOKIO_HOME/web/views/...` are completely missing,
    - reset layout
    - filter by category
 8. If you want to remove Customokio safely, click `Restore Default` before uninstalling the package.
+9. Use `Reapply` when you want to reinstall your current local version, or `Update + Reapply` when you want Customokio to `git pull` the latest repo changes before reinstalling.
 
 ## 🎯 Best For
 
@@ -181,8 +192,9 @@ Main files in this package:
 
 - `pinokio.js`: launcher UI
 - `install.js`: apply customization
+- `reapply.js`: reinstall the current local Customokio files
 - `reset.js`: restore previous/default state
-- `update.js`: reapply latest package files
+- `update.js`: pull the latest package files from GitHub, then reinstall them
 - `web/views/index.ejs`: customized home template
 - `web/views/partials/main_sidebar.ejs`
 - `web/views/partials/peer_access_points.ejs`

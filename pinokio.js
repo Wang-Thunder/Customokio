@@ -6,6 +6,7 @@ module.exports = {
     const installed = info.exists("state/installed.json")
     const running = {
       install: info.running("install.js"),
+      reapply: info.running("reapply.js"),
       update: info.running("update.js"),
       reset: info.running("reset.js")
     }
@@ -23,8 +24,17 @@ module.exports = {
       return [{
         default: true,
         icon: "fa-solid fa-rotate",
-        text: "Refreshing",
+        text: "Updating",
         href: "update.js"
+      }]
+    }
+
+    if (running.reapply) {
+      return [{
+        default: true,
+        icon: "fa-solid fa-arrows-rotate",
+        text: "Reapplying",
+        href: "reapply.js"
       }]
     }
 
@@ -39,9 +49,13 @@ module.exports = {
 
     if (installed) {
       return [{
-        icon: "fa-solid fa-rotate",
-        text: "Reapply",
+        icon: "fa-solid fa-cloud-arrow-down",
+        text: "Update + Reapply",
         href: "update.js"
+      }, {
+        icon: "fa-solid fa-arrows-rotate",
+        text: "Reapply",
+        href: "reapply.js"
       }, {
         icon: "fa-regular fa-circle-xmark",
         text: "Restore Default",
