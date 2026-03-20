@@ -91,6 +91,8 @@ Use stacked layout when you want everything expanded vertically, or folder layou
   - `Update + Reapply` runs `git pull` first, then reinstalls
 - Improved removal guidance and restore behavior so uninstalling Customokio is less likely to strand a broken override state.
 - Fixed the category count badge so it sizes correctly and no longer collides with controls in folder/grid mode.
+- Changed `Apply`, `Reapply`, `Update + Reapply`, and `Restore Default` to use Pinokio refresh-mode actions and explicitly refresh the app index after install/remove steps.
+- Added clearer post-install guidance for the stale-home case where Customokio is applied while other apps are already open.
 
 ## ⚙️ How Installation Works
 
@@ -108,6 +110,7 @@ When you click `Apply`, the launcher:
 - copies the Customokio home template into `PINOKIO_HOME/web/views/index.ejs`
 - copies the required partials into `PINOKIO_HOME/web/views/partials/`
 - copies the client assets into `PINOKIO_HOME/web/public/`
+- asks Pinokio to rebuild its app index so the live UI is more likely to pick up the new home override immediately
 
 When you click `Restore Default`, the launcher:
 
@@ -116,6 +119,7 @@ When you click `Restore Default`, the launcher:
 - falls back to legacy `state/backup` files if they still exist from an older install
 - removes the Customokio assets from `PINOKIO_HOME/web/public/`
 - removes its own temporary install state
+- asks Pinokio to rebuild its app index after the restore
 
 If the override files under `PINOKIO_HOME/web/views/...` are completely missing, Pinokio should fall back to its built-in bundled home UI. The broken state is when a custom `index.ejs` override still exists but the partials it depends on are missing.
 
@@ -151,6 +155,8 @@ Action summary:
    - filter by category
 8. If you want to remove Customokio safely, click `Restore Default` before uninstalling the package.
 9. Use `Reapply` when you want to reinstall your current local version, or `Update + Reapply` when you want Customokio to `git pull` the latest repo changes before reinstalling.
+
+If you apply Customokio while other apps are already running and the home screen does not visibly change right away, refresh the Home page once or restart Pinokio. The override files may already be in place even if the currently visible home screen has not rerendered yet.
 
 ## 🎯 Best For
 

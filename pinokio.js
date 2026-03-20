@@ -51,15 +51,18 @@ module.exports = {
       return [{
         icon: "fa-solid fa-cloud-arrow-down",
         text: "Update + Reapply",
-        href: "update.js"
+        href: "update.js",
+        mode: "refresh"
       }, {
         icon: "fa-solid fa-arrows-rotate",
         text: "Reapply",
-        href: "reapply.js"
+        href: "reapply.js",
+        mode: "refresh"
       }, {
         icon: "fa-regular fa-circle-xmark",
         text: "Restore Default",
-        href: "reset.js"
+        href: "reset.js",
+        mode: "refresh"
       }, {
         default: true,
         icon: "fa-solid fa-book",
@@ -71,7 +74,8 @@ module.exports = {
     return [{
       icon: "fa-solid fa-wand-magic-sparkles",
       text: "Apply",
-      href: "install.js"
+      href: "install.js",
+      mode: "refresh"
     }, {
       default: true,
       icon: "fa-solid fa-book",
