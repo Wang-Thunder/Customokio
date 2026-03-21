@@ -183,6 +183,7 @@
     let state = sanitizeState(loadState(), cardRefs);
     let activeFilter = "all";
     let floatingPanel = null;
+    let textPrompt = null;
     let sortables = [];
     let sortablePromise = null;
     let usageState = loadUsageState();
@@ -261,6 +262,77 @@
       panel.style.top = Math.min(window.innerHeight - 12, rect.bottom + 8) + "px";
       floatingPanel = panel;
       return panel;
+    }
+    function closeTextPrompt(value) {
+      if (!textPrompt) return;
+      const current = textPrompt;
+      textPrompt = null;
+      current.overlay.remove();
+      current.resolve(value);
+    }
+    function openTextPrompt(options) {
+      closeFloatingPanel();
+      if (textPrompt) closeTextPrompt(null);
+      options = options || {};
+      return new Promise(function (resolve) {
+        const overlay = document.createElement("div");
+        overlay.className = "customokio-modal-backdrop";
+        const dialog = document.createElement("div");
+        dialog.className = "customokio-modal";
+        const title = document.createElement("div");
+        title.className = "customokio-modal-title";
+        title.textContent = options.title || "Enter a name";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "customokio-panel-input customokio-modal-input";
+        input.value = options.value || "";
+        input.placeholder = options.placeholder || "";
+        input.autocomplete = "off";
+        const actions = document.createElement("div");
+        actions.className = "customokio-modal-actions";
+        const cancel = document.createElement("button");
+        cancel.type = "button";
+        cancel.className = "btn";
+        cancel.textContent = "Cancel";
+        const confirm = document.createElement("button");
+        confirm.type = "button";
+        confirm.className = "btn";
+        confirm.textContent = options.confirmText || "OK";
+        function submit() {
+          const value = input.value.trim();
+          if (!value) {
+            input.focus();
+            return;
+          }
+          closeTextPrompt(value);
+        }
+        cancel.addEventListener("click", function () { closeTextPrompt(null); });
+        confirm.addEventListener("click", submit);
+        overlay.addEventListener("click", function (event) {
+          if (event.target === overlay) closeTextPrompt(null);
+        });
+        input.addEventListener("keydown", function (event) {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            submit();
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            closeTextPrompt(null);
+          }
+        });
+        actions.appendChild(cancel);
+        actions.appendChild(confirm);
+        dialog.appendChild(title);
+        dialog.appendChild(input);
+        dialog.appendChild(actions);
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+        textPrompt = { overlay: overlay, resolve: resolve };
+        window.requestAnimationFrame(function () {
+          input.focus();
+          input.select();
+        });
+      });
     }
     function ensureSortable() {
       if (window.Sortable) return Promise.resolve(window.Sortable);
@@ -669,16 +741,20 @@
       const actions = document.createElement("div");
       actions.className = "customokio-category-actions";
       actions.innerHTML = '<button type="button" class="btn" data-action="subgroup" title="Add subgroup"><i class="fa-solid fa-folder-plus"></i></button><button type="button" class="btn" data-action="sort" title="Sort category"><i class="fa-solid fa-arrow-down-a-z"></i></button><button type="button" class="btn" data-action="items" title="Category view"><i class="fa-solid fa-table-cells"></i></button><button type="button" class="btn" data-action="color" title="Set color"><i class="fa-solid fa-palette"></i></button><button type="button" class="btn" data-action="icon" title="Set icon"><i class="fa-regular fa-image"></i></button><button type="button" class="btn" data-action="rename" title="Rename"><i class="fa-solid fa-pen"></i></button><button type="button" class="btn" data-action="delete" title="Delete"><i class="fa-regular fa-trash-can"></i></button>';
-      actions.addEventListener("click", function (event) {
+      actions.addEventListener("click", async function (event) {
         const button = event.target.closest("button");
         if (!button) return;
         event.preventDefault();
         event.stopPropagation();
         const action = button.getAttribute("data-action");
         if (action === "subgroup") {
-          const name = window.prompt("Subcategory name");
-          if (!name || !name.trim()) return;
-          const next = createCategory(name.trim(), { collapsed: false });
+          const name = await openTextPrompt({
+            title: "Subcategory name",
+            placeholder: "New subcategory",
+            confirmText: "Create"
+          });
+          if (!name) return;
+          const next = createCategory(name, { collapsed: false });
           state.categories[next.id] = next;
           addRef(ref, next.id, "prepend");
           persistState();
@@ -741,9 +817,13 @@
             panel.appendChild(layoutButton);
           });
         } else if (action === "rename") {
-          const nextName = window.prompt("Rename category", category.name);
-          if (!nextName || !nextName.trim()) return;
-          category.name = nextName.trim();
+          const nextName = await openTextPrompt({
+            title: "Rename category",
+            value: category.name,
+            confirmText: "Save"
+          });
+          if (!nextName) return;
+          category.name = nextName;
           persistState();
           render();
         } else if (action === "delete") {
@@ -899,14 +979,18 @@
       toggleStar(button);
     }, true);
 
-    toolbar.addEventListener("click", function (event) {
+    toolbar.addEventListener("click", async function (event) {
       const button = event.target.closest("button");
       if (!button) return;
       const action = button.getAttribute("data-action");
       if (action === "new") {
-        const name = window.prompt("Category name");
-        if (!name || !name.trim()) return;
-        const category = createCategory(name.trim(), { collapsed: false });
+        const name = await openTextPrompt({
+          title: "Category name",
+          placeholder: "New category",
+          confirmText: "Create"
+        });
+        if (!name) return;
+        const category = createCategory(name, { collapsed: false });
         state.categories[category.id] = category;
         addRef(null, category.id, "prepend");
         persistState();

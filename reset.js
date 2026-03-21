@@ -155,15 +155,9 @@ module.exports = {
       }
     },
     {
-      method: "app.refresh",
-      params: {
-        force: true
-      }
-    },
-    {
       method: "notify",
       params: {
-        html: "Customokio customization removed. Pinokio was asked to refresh its app index. If the stock home screen does not visibly return right away, refresh the Home page or restart Pinokio."
+        html: "Customokio customization removed. Original files were restored from AppData, .customokio.bak sidecars, or legacy backups when available."
       }
     }
   ]

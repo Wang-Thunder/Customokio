@@ -196,12 +196,6 @@ module.exports = {
       }
     },
     {
-      method: "app.refresh",
-      params: {
-        force: true
-      }
-    },
-    {
       method: "fs.write",
       params: {
         path: path.resolve(externalBackupRoot, "manifest.json"),
@@ -236,7 +230,7 @@ module.exports = {
     {
       method: "notify",
       params: {
-        html: "Customokio home customization applied. Pinokio was asked to refresh its app index. If the home screen does not visibly update right away, refresh the Home page or restart Pinokio. This is most likely when Apply was run while other apps were already open."
+        html: "Customokio home customization applied. Original files are backed up in AppData and as .customokio.bak sidecars before the live home files are replaced."
       }
     }
   ]

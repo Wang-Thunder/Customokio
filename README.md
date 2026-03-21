@@ -91,8 +91,8 @@ Use stacked layout when you want everything expanded vertically, or folder layou
   - `Update + Reapply` runs `git pull` first, then reinstalls
 - Improved removal guidance and restore behavior so uninstalling Customokio is less likely to strand a broken override state.
 - Fixed the category count badge so it sizes correctly and no longer collides with controls in folder/grid mode.
-- Changed `Apply`, `Reapply`, `Update + Reapply`, and `Restore Default` to use Pinokio refresh-mode actions and explicitly refresh the app index after install/remove steps.
-- Added clearer post-install guidance for the stale-home case where Customokio is applied while other apps are already open.
+- Restored the standard `Apply`, `Reapply`, `Update + Reapply`, and `Restore Default` launcher actions after the refresh-mode flow caused installs to appear inactive on some Pinokio setups.
+- Replaced browser-native category naming prompts with an in-page modal so `New category`, `Add subcategory`, and `Rename category` stay on top of the Pinokio window.
 
 ## ⚙️ How Installation Works
 
@@ -110,7 +110,6 @@ When you click `Apply`, the launcher:
 - copies the Customokio home template into `PINOKIO_HOME/web/views/index.ejs`
 - copies the required partials into `PINOKIO_HOME/web/views/partials/`
 - copies the client assets into `PINOKIO_HOME/web/public/`
-- asks Pinokio to rebuild its app index so the live UI is more likely to pick up the new home override immediately
 
 When you click `Restore Default`, the launcher:
 
@@ -119,7 +118,6 @@ When you click `Restore Default`, the launcher:
 - falls back to legacy `state/backup` files if they still exist from an older install
 - removes the Customokio assets from `PINOKIO_HOME/web/public/`
 - removes its own temporary install state
-- asks Pinokio to rebuild its app index after the restore
 
 If the override files under `PINOKIO_HOME/web/views/...` are completely missing, Pinokio should fall back to its built-in bundled home UI. The broken state is when a custom `index.ejs` override still exists but the partials it depends on are missing.
 
