@@ -81,11 +81,6 @@ Use stacked layout when you want everything expanded vertically, folder layout w
 
 ## 📝 Recent Updates
 
-- Added safer backup handling for Pinokio home overrides:
-  - primary backups now live in `%APPDATA%\Pinokio\Customokio\backup\`
-  - `.customokio.bak` sidecars are also written next to the live override files
-  - restore now checks AppData backups first, then sidecars, then legacy `state/backup` files
-- Added an AppData `manifest.json` so backup locations remain easy to inspect manually.
 - Added `Flow view` as a third top-level layout mode for denser category packing than `Folder view`.
 - Reduced the startup flash of the stock Pinokio home before the Customokio layer initializes.
 - Improved startup initialization so Customokio now applies correctly even when Pinokio opens with no running apps.
@@ -97,6 +92,11 @@ Use stacked layout when you want everything expanded vertically, folder layout w
   - `Reapply` reinstalls the current local Customokio files
   - `Update + Reapply` runs `git pull` first, then reinstalls
 - Changed the launcher so it opens to `README` by default instead of auto-selecting `Apply` or `Reapply`.
+- Added an AppData `manifest.json` so backup locations remain easy to inspect manually.
+- Added safer backup handling for Pinokio home overrides:
+  - primary backups now live in `%APPDATA%\Pinokio\Customokio\backup\`
+  - `.customokio.bak` sidecars are also written next to the live override files
+  - restore now checks AppData backups first, then sidecars, then legacy `state/backup` files
 
 ## ⚙️ How Installation Works
 
