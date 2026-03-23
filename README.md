@@ -86,17 +86,17 @@ Use stacked layout when you want everything expanded vertically, folder layout w
   - `.customokio.bak` sidecars are also written next to the live override files
   - restore now checks AppData backups first, then sidecars, then legacy `state/backup` files
 - Added an AppData `manifest.json` so backup locations remain easy to inspect manually.
-- Changed the launcher so it opens to `README` by default instead of auto-selecting `Apply` or `Reapply`.
+- Added `Flow view` as a third top-level layout mode for denser category packing than `Folder view`.
+- Reduced the startup flash of the stock Pinokio home before the Customokio layer initializes.
+- Improved startup initialization so Customokio now applies correctly even when Pinokio opens with no running apps.
+- Replaced browser-native category naming prompts with an in-page modal so `New category`, `Add subcategory`, and `Rename category` stay on top of the Pinokio window.
+- Restored the standard `Apply`, `Reapply`, `Update + Reapply`, and `Restore Default` launcher actions after the refresh-mode flow caused installs to appear inactive on some Pinokio setups.
+- Fixed the category count badge so it sizes correctly and no longer collides with controls in folder/grid mode.
+- Improved removal guidance and restore behavior so uninstalling Customokio is less likely to strand a broken override state.
 - Split manual maintenance into two actions:
   - `Reapply` reinstalls the current local Customokio files
   - `Update + Reapply` runs `git pull` first, then reinstalls
-- Improved removal guidance and restore behavior so uninstalling Customokio is less likely to strand a broken override state.
-- Fixed the category count badge so it sizes correctly and no longer collides with controls in folder/grid mode.
-- Restored the standard `Apply`, `Reapply`, `Update + Reapply`, and `Restore Default` launcher actions after the refresh-mode flow caused installs to appear inactive on some Pinokio setups.
-- Replaced browser-native category naming prompts with an in-page modal so `New category`, `Add subcategory`, and `Rename category` stay on top of the Pinokio window.
-- Improved startup initialization so Customokio now applies correctly even when Pinokio opens with no running apps.
-- Reduced the startup flash of the stock Pinokio home before the Customokio layer initializes.
-- Added `Flow view` as a third top-level layout mode for denser category packing than `Folder view`.
+- Changed the launcher so it opens to `README` by default instead of auto-selecting `Apply` or `Reapply`.
 
 ## ⚙️ How Installation Works
 
