@@ -51,8 +51,22 @@ html.customokio-ready .customokio-group-host {
 
 .customokio-support-link span {
   margin-left: 3px;
+  color: inherit;
+  opacity: 0.9;
 }
 
+.customokio-support-link .customokio-support-heart {
+  display: inline-flex;
+  align-items: center;
+  color: #ef4444 !important;
+  opacity: 1;
+}
+
+.customokio-support-link .customokio-support-heart i {
+  font-size: 11px;
+  line-height: 1;
+  color: #ef4444 !important;
+}
 @media (max-width: 1180px) {
   .customokio-support-link {
     width: 100%;
