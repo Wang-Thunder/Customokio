@@ -19,7 +19,7 @@ Feature highlights:
 - Rename categories.
 - Collapse or expand all categories at once.
 - Collapse and expand categories with double-click.
-- Switch the overall category container layout between `Stacked view` and `Folder view`.
+- Switch the overall category container layout between `Stacked view`, `Folder view`, and `Flow view`.
 - Switch each category's app display between `List view` and `Grid view`.
 - Sort each category independently:
   - `Manual order`
@@ -32,6 +32,7 @@ Feature highlights:
 - Star apps and keep starred state available even when Pinokio's server-side star endpoint is unavailable.
 - Color-code categories.
 - Assign category icons.
+- Use in-page category dialogs instead of browser prompts, so naming and renaming stay inside the Pinokio window.
 - Export and import the layout as JSON.
 - Restore the default Pinokio home page.
 - Open the launcher to the README by default so `Apply`, `Reapply`, and `Restore Default` stay manual actions.
@@ -72,7 +73,7 @@ Drag apps into a category, create subcategories, and build out a nested structur
 
 ### 🪟 Switch Views And Work With Multiple Groups
 
-Use stacked layout when you want everything expanded vertically, or folder layout when you want more categories visible at once.
+Use stacked layout when you want everything expanded vertically, folder layout when you want rigid columns, or flow layout when you want denser top-level packing with less dead space between categories.
 
 ![Stacked Category Layout](assets/home5.png)
 
@@ -93,6 +94,9 @@ Use stacked layout when you want everything expanded vertically, or folder layou
 - Fixed the category count badge so it sizes correctly and no longer collides with controls in folder/grid mode.
 - Restored the standard `Apply`, `Reapply`, `Update + Reapply`, and `Restore Default` launcher actions after the refresh-mode flow caused installs to appear inactive on some Pinokio setups.
 - Replaced browser-native category naming prompts with an in-page modal so `New category`, `Add subcategory`, and `Rename category` stay on top of the Pinokio window.
+- Improved startup initialization so Customokio now applies correctly even when Pinokio opens with no running apps.
+- Reduced the startup flash of the stock Pinokio home before the Customokio layer initializes.
+- Added `Flow view` as a third top-level layout mode for denser category packing than `Folder view`.
 
 ## ⚙️ How Installation Works
 

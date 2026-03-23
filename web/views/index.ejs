@@ -15,6 +15,18 @@
 <link href="/filepond-plugin-image-edit.min.css" rel="stylesheet" />
 <link href="/style.css" rel="stylesheet"/>
 <link href="/customokio.css" rel="stylesheet"/>
+<% if (ishome && (typeof mode !== "string" || mode !== "terminals")) { %>
+<script>
+(function () {
+  try {
+    document.documentElement.classList.add('customokio-pending');
+    window.setTimeout(function () {
+      document.documentElement.classList.remove('customokio-pending');
+    }, 1800);
+  } catch (error) {}
+})();
+</script>
+<% } %>
 <link href="/urldropdown.css" rel="stylesheet" />
 <link href="/tom-select.css" rel="stylesheet" />
 <% if (agent === "electron") { %>

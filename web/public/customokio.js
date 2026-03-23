@@ -5,8 +5,13 @@
   const LEGACY_KEYS = ["customokio:layout:v2", "customokio:layout:v1"];
   const HOME_CATEGORY_ID = "cat-home";
   const DEFAULT_CATEGORY_COLOR = "#6b7280";
-  const EMOJIS = ["📁", "🏠", "⭐", "🧰", "🎵", "🎬", "🤖", "🧪", "📝", "🎨", "📦", "🔥", "📚", "🕹️", "🗂️", "🎯", "🧠", "🎤", "📷", "🛠️", "💬", "🧬", "🛰️", "🔒"];
+  const EMOJIS = ["Ã°Å¸â€œÂ", "Ã°Å¸ÂÂ ", "Ã¢Â­Â", "Ã°Å¸Â§Â°", "Ã°Å¸Å½Âµ", "Ã°Å¸Å½Â¬", "Ã°Å¸Â¤â€“", "Ã°Å¸Â§Âª", "Ã°Å¸â€œÂ", "Ã°Å¸Å½Â¨", "Ã°Å¸â€œÂ¦", "Ã°Å¸â€Â¥", "Ã°Å¸â€œÅ¡", "Ã°Å¸â€¢Â¹Ã¯Â¸Â", "Ã°Å¸â€”â€šÃ¯Â¸Â", "Ã°Å¸Å½Â¯", "Ã°Å¸Â§Â ", "Ã°Å¸Å½Â¤", "Ã°Å¸â€œÂ·", "Ã°Å¸â€ºÂ Ã¯Â¸Â", "Ã°Å¸â€™Â¬", "Ã°Å¸Â§Â¬", "Ã°Å¸â€ºÂ°Ã¯Â¸Â", "Ã°Å¸â€â€™"];
   const COLORS = ["#6b7280", "#4b5563", "#1f2937", "#2563eb", "#0f766e", "#15803d", "#b45309", "#b91c1c", "#7c3aed", "#db2777"];
+
+  function resolvePendingState(isReady) {
+    document.documentElement.classList.remove("customokio-pending");
+    document.documentElement.classList.toggle("customokio-ready", Boolean(isReady));
+  }
 
   function clone(value) { return JSON.parse(JSON.stringify(value)); }
   function makeId(prefix) { return prefix + "-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8); }
@@ -17,7 +22,7 @@
     return DEFAULT_CATEGORY_COLOR;
   }
   function createCategory(name, overrides) {
-    return Object.assign({ id: makeId("cat"), name: name || "New Category", icon: "📁", color: DEFAULT_CATEGORY_COLOR, collapsed: false, sortMode: "manual", itemLayout: "list", children: [] }, overrides || {});
+    return Object.assign({ id: makeId("cat"), name: name || "New Category", icon: "Ã°Å¸â€œÂ", color: DEFAULT_CATEGORY_COLOR, collapsed: false, sortMode: "manual", itemLayout: "list", children: [] }, overrides || {});
   }
   function createDefaultState(cardRefs) {
     const refs = Array.from(cardRefs);
@@ -27,7 +32,7 @@
       customColors: [],
       root: refs.length ? [HOME_CATEGORY_ID] : [],
       categories: refs.length ? {
-        [HOME_CATEGORY_ID]: createCategory("Home", { id: HOME_CATEGORY_ID, icon: "🏠", color: DEFAULT_CATEGORY_COLOR, collapsed: false, children: refs })
+        [HOME_CATEGORY_ID]: createCategory("Home", { id: HOME_CATEGORY_ID, icon: "Ã°Å¸ÂÂ ", color: DEFAULT_CATEGORY_COLOR, collapsed: false, children: refs })
       } : {}
     };
   }
@@ -84,7 +89,8 @@
   function sanitizeState(rawState, cardRefs) {
     const source = rawState && typeof rawState === "object" ? rawState : {};
     const sourceCategories = source.categories && typeof source.categories === "object" ? source.categories : {};
-    const safe = { version: 3, layoutMode: source.layoutMode === "folder" ? "folder" : "stack", customColors: Array.isArray(source.customColors) ? source.customColors.map(normalizeColor).slice(0, 24) : [], root: [], categories: {} };
+    const safeLayoutMode = source.layoutMode === "folder" || source.layoutMode === "flow" ? source.layoutMode : "stack";
+    const safe = { version: 3, layoutMode: safeLayoutMode, customColors: Array.isArray(source.customColors) ? source.customColors.map(normalizeColor).slice(0, 24) : [], root: [], categories: {} };
     const visited = new Set();
     function walk(refs) {
       const output = [];
@@ -97,7 +103,7 @@
           visited.add(ref);
           safe.categories[ref] = createCategory(category.name, {
             id: ref,
-            icon: typeof category.icon === "string" && category.icon.trim() ? category.icon.trim() : "📁",
+            icon: typeof category.icon === "string" && category.icon.trim() ? category.icon.trim() : "Ã°Å¸â€œÂ",
             color: normalizeColor(category.color),
             collapsed: Boolean(category.collapsed),
             sortMode: normalizeSortMode(category.sortMode || "manual"),
@@ -167,17 +173,18 @@
 
   function setup() {
     const currentParams = new URLSearchParams(window.location.search);
-    if (currentParams.get("mode") === "terminals") return;
+    if (currentParams.get("mode") === "terminals") { resolvePendingState(false); return; }
     const searchForm = document.querySelector(".home-search-form");
     const actionsHost = document.querySelector(".home-apps-header-main-actions");
     const sortWrap = document.querySelector(".home-apps-sort");
     const sortSelect = document.querySelector("#home-apps-sort-select");
     const runningContainer = document.querySelector(".running-apps");
     const notRunningContainer = document.querySelector(".not-running-apps");
-    if (!searchForm || !actionsHost || !sortWrap || !sortSelect || !runningContainer) return;
+    const anchorContainer = runningContainer || notRunningContainer;
+    if (!searchForm || !actionsHost || !sortWrap || !sortSelect || !anchorContainer) { resolvePendingState(false); return; }
 
     const cardEntries = collectCards();
-    if (!cardEntries.length) return;
+    if (!cardEntries.length) { resolvePendingState(false); return; }
     const cardMap = new Map(cardEntries.map((entry) => [entry.ref, entry]));
     const cardRefs = new Set(cardEntries.map((entry) => entry.ref));
     let state = sanitizeState(loadState(), cardRefs);
@@ -191,7 +198,7 @@
 
     const groupHost = document.createElement("section");
     groupHost.className = "customokio-group-host";
-    runningContainer.parentNode.insertBefore(groupHost, runningContainer);
+    anchorContainer.parentNode.insertBefore(groupHost, anchorContainer);
 
     const controls = document.createElement("div");
     controls.className = "customokio-control-strip";
@@ -206,7 +213,7 @@
     supportLink.href = "https://ko-fi.com/wangthunder";
     supportLink.target = "_blank";
     supportLink.rel = "noopener noreferrer";
-    supportLink.innerHTML = 'Like Customokio? Support this project on Ko-fi <span aria-hidden="true">❤️</span>';
+    supportLink.innerHTML = 'Like Customokio? Support this project on Ko-fi <span aria-hidden="true">Ã¢ÂÂ¤Ã¯Â¸Â</span>';
     searchForm.classList.add("customokio-search-support");
     const searchInput = searchForm.querySelector("input[type='search'].flexible");
     if (searchInput) {
@@ -496,8 +503,28 @@
         });
         return refs;
       }
-      const rootList = groupHost.querySelector(":scope > .customokio-root-dropzone > .customokio-list");
-      next.root = rootList ? readList(rootList) : [];
+      if (state.layoutMode === "flow") {
+        const flowColumns = Array.from(groupHost.querySelectorAll(":scope > .customokio-root-dropzone > .customokio-root-items-flow > .customokio-flow-column.customokio-root-categories"));
+        const flowRows = flowColumns.map(readList);
+        const mergedFlowRefs = [];
+        let rowIndex = 0;
+        while (true) {
+          let added = false;
+          flowRows.forEach((refs) => {
+            if (rowIndex < refs.length) {
+              mergedFlowRefs.push(refs[rowIndex]);
+              added = true;
+            }
+          });
+          if (!added) break;
+          rowIndex += 1;
+        }
+        const rootCardLists = Array.from(groupHost.querySelectorAll(":scope > .customokio-root-dropzone > .customokio-list.customokio-root-uncategorized"));
+        next.root = mergedFlowRefs.concat(rootCardLists.flatMap(readList));
+      } else {
+        const rootLists = Array.from(groupHost.querySelectorAll(":scope > .customokio-root-dropzone > .customokio-list"));
+        next.root = rootLists.flatMap(readList);
+      }
       state = sanitizeState(next, cardRefs);
       persistState();
       render();
@@ -506,15 +533,27 @@
       destroySortables();
       ensureSortable().then((Sortable) => {
         groupHost.querySelectorAll(".customokio-list").forEach((list) => {
+          const isFlowCategoryList = list.classList.contains("customokio-root-categories");
+          const isRootUncategorizedList = list.classList.contains("customokio-root-uncategorized");
           const instance = new Sortable(list, {
-            group: "customokio",
+            group: isFlowCategoryList ? {
+              name: "customokio",
+              put: function (_to, _from, dragged) {
+                return Boolean(dragged && dragged.classList.contains("customokio-category-shell"));
+              }
+            } : isRootUncategorizedList ? {
+              name: "customokio",
+              put: function (_to, _from, dragged) {
+                return Boolean(dragged && dragged.classList.contains("line"));
+              }
+            } : "customokio",
             animation: 150,
             forceFallback: true,
             fallbackOnBody: true,
             fallbackTolerance: 3,
             emptyInsertThreshold: 20,
             swapThreshold: 0.65,
-            draggable: ".line, .customokio-category-shell",
+            draggable: isFlowCategoryList ? ".customokio-category-shell" : isRootUncategorizedList ? ".line" : ".line, .customokio-category-shell",
             handle: ".customokio-category-header, .line",
             filter: ".customokio-category-actions, .customokio-category-actions *, .btn, .btn *",
             preventOnFilter: false,
@@ -592,6 +631,44 @@
         return compareCards(cardA.card, cardB.card, mode, cardA.name, cardB.name);
       });
       return categories.concat(cards);
+    }
+    function getFlowColumnCount() {
+      const availableWidth = Math.max(0, Math.round(groupHost.getBoundingClientRect().width || groupHost.clientWidth || 0));
+      const minColumnWidth = 280;
+      const gap = 14;
+      return Math.max(1, Math.floor((availableWidth + gap) / (minColumnWidth + gap)));
+    }
+    function renderFlowColumns(root, refs, query) {
+      const flowShell = document.createElement("div");
+      flowShell.className = "customokio-root-items-flow";
+      root.appendChild(flowShell);
+
+      const visibleCategories = [];
+      refs.forEach((ref) => {
+        if (activeFilter !== "all" && ref !== activeFilter && !categoryContainsRef(ref, activeFilter)) return;
+        const category = renderCategory(ref, 0, query);
+        if (!category) return;
+        const visible = matchesSearch(ref, query) || category.dataset.hasVisibleChildren;
+        if (!visible) return;
+        visibleCategories.push(category);
+      });
+      if (!visibleCategories.length) return;
+
+      const columnCount = Math.min(visibleCategories.length, getFlowColumnCount());
+      const columns = Array.from({ length: columnCount }, function () {
+        const column = document.createElement("div");
+        column.className = "customokio-list customokio-flow-column customokio-root-categories";
+        column.dataset.parentId = "";
+        flowShell.appendChild(column);
+        return column;
+      });
+
+      visibleCategories.forEach((category, index) => {
+        const targetColumn = index < columns.length ? columns[index] : columns.reduce((shortest, column) => {
+          return column.getBoundingClientRect().height < shortest.getBoundingClientRect().height ? column : shortest;
+        }, columns[0]);
+        targetColumn.appendChild(category);
+      });
     }
     function matchesSearch(ref, query) {
       if (!query) return true;
@@ -692,7 +769,7 @@
       input.type = "text";
       input.className = "customokio-panel-input";
       input.maxLength = 4;
-      input.value = category.icon || "📁";
+      input.value = category.icon || "Ã°Å¸â€œÂ";
       const save = document.createElement("button");
       save.type = "button";
       save.className = "btn";
@@ -714,9 +791,10 @@
     function renderCategory(ref, depth, query) {
       const category = state.categories[ref];
       if (!category) return null;
-      const topLevelFolder = state.layoutMode === "folder" && depth === 0;
+      const topLevelCompact = state.layoutMode !== "stack" && depth === 0;
+      const shellLayoutClass = topLevelCompact ? "layout-" + state.layoutMode : "layout-stack";
       const shell = document.createElement("section");
-      shell.className = "customokio-category-shell depth-" + depth + " " + (topLevelFolder ? "layout-folder" : "layout-stack") + (category.collapsed && !query ? " collapsed" : "");
+      shell.className = "customokio-category-shell depth-" + depth + " " + shellLayoutClass + (category.collapsed && !query ? " collapsed" : "");
       shell.dataset.categoryId = ref;
       shell.dataset.ref = ref;
       shell.style.setProperty("--customokio-category-color", category.color || DEFAULT_CATEGORY_COLOR);
@@ -733,7 +811,7 @@
       const title = document.createElement("div");
       title.className = "customokio-category-title-row";
       title.innerHTML = '<span class="customokio-category-icon"></span><span class="customokio-category-title"></span><span class="customokio-category-meta"></span>';
-      title.querySelector(".customokio-category-icon").textContent = category.icon || "📁";
+      title.querySelector(".customokio-category-icon").textContent = category.icon || "Ã°Å¸â€œÂ";
       title.querySelector(".customokio-category-title").textContent = category.name;
       title.querySelector(".customokio-category-meta").textContent = String(category.children.length);
       header.appendChild(title);
@@ -770,7 +848,7 @@
             const sortButton = document.createElement("button");
             sortButton.type = "button";
             sortButton.className = "btn";
-            sortButton.textContent = option.label + (category.sortMode === option.value ? " •" : "");
+            sortButton.textContent = option.label + (category.sortMode === option.value ? " Ã¢â‚¬Â¢" : "");
             sortButton.addEventListener("click", function () {
               category.sortMode = option.value;
               persistState();
@@ -885,32 +963,58 @@
       const query = String(searchForm.querySelector("input[type='search']")?.value || "").trim().toLowerCase();
       groupHost.innerHTML = "";
       groupHost.classList.toggle("folder-mode", state.layoutMode === "folder");
-      runningContainer.style.display = "none";
+      groupHost.classList.toggle("flow-mode", state.layoutMode === "flow");
+      if (runningContainer) runningContainer.style.display = "none";
       if (notRunningContainer) notRunningContainer.style.display = "none";
 
       const root = document.createElement("div");
       root.className = "customokio-root-dropzone";
       groupHost.appendChild(root);
-      const rootList = document.createElement("div");
-      rootList.className = "customokio-list customokio-root-items-" + (state.layoutMode === "folder" ? "grid" : "list");
-      rootList.dataset.parentId = "";
-      root.appendChild(rootList);
+      const sortedRootRefs = getSortedRefs(state.root, null);
 
-      getSortedRefs(state.root, null).forEach((ref) => {
-        if (activeFilter !== "all" && ref !== activeFilter && !categoryContainsRef(ref, activeFilter)) return;
-        if (ref.startsWith("cat-")) {
-          const category = renderCategory(ref, 0, query);
-          if (!category) return;
-          if (!matchesSearch(ref, query) && !category.dataset.hasVisibleChildren) category.style.display = "none";
-          rootList.appendChild(category);
-          return;
+      if (state.layoutMode === "flow") {
+        const categoryRefs = sortedRootRefs.filter((ref) => ref.startsWith("cat-"));
+        const cardRefsAtRoot = sortedRootRefs.filter((ref) => !ref.startsWith("cat-"));
+
+        renderFlowColumns(root, categoryRefs, query);
+
+        if (cardRefsAtRoot.length) {
+          const uncategorizedList = document.createElement("div");
+          uncategorizedList.className = "customokio-list customokio-root-items-list customokio-root-uncategorized";
+          uncategorizedList.dataset.parentId = "";
+          root.appendChild(uncategorizedList);
+
+          cardRefsAtRoot.forEach((ref) => {
+            if (activeFilter !== "all" && ref !== activeFilter && !categoryContainsRef(ref, activeFilter)) return;
+            const card = ensureCard(ref);
+            if (!card) return;
+            card.style.display = matchesSearch(ref, query) ? "" : "none";
+            card.dataset.ref = ref;
+            uncategorizedList.appendChild(card);
+          });
         }
-        const card = ensureCard(ref);
-        if (!card) return;
-        card.style.display = matchesSearch(ref, query) ? "" : "none";
-        card.dataset.ref = ref;
-        rootList.appendChild(card);
-      });
+      } else {
+        const rootList = document.createElement("div");
+        rootList.className = "customokio-list customokio-root-items-" + (state.layoutMode === "folder" ? "grid" : "list");
+        rootList.dataset.parentId = "";
+        root.appendChild(rootList);
+
+        sortedRootRefs.forEach((ref) => {
+          if (activeFilter !== "all" && ref !== activeFilter && !categoryContainsRef(ref, activeFilter)) return;
+          if (ref.startsWith("cat-")) {
+            const category = renderCategory(ref, 0, query);
+            if (!category) return;
+            if (!matchesSearch(ref, query) && !category.dataset.hasVisibleChildren) category.style.display = "none";
+            rootList.appendChild(category);
+            return;
+          }
+          const card = ensureCard(ref);
+          if (!card) return;
+          card.style.display = matchesSearch(ref, query) ? "" : "none";
+          card.dataset.ref = ref;
+          rootList.appendChild(card);
+        });
+      }
       initSortables();
     }
 
@@ -999,13 +1103,17 @@
       }
       if (action === "layout") {
         const panel = openFloatingPanel(button, "customokio-layout-panel");
-        ["stack", "folder"].forEach((layout) => {
+        [
+          { value: "stack", label: "Stacked view" },
+          { value: "folder", label: "Folder view" },
+          { value: "flow", label: "Flow view" }
+        ].forEach((layout) => {
           const layoutButton = document.createElement("button");
           layoutButton.type = "button";
           layoutButton.className = "btn";
-          layoutButton.textContent = layout === "stack" ? "Stacked view" : "Folder view";
+          layoutButton.textContent = layout.label;
           layoutButton.addEventListener("click", function () {
-            state.layoutMode = layout;
+            state.layoutMode = layout.value;
             persistState();
             render();
             closeFloatingPanel();
@@ -1063,7 +1171,16 @@
       importInput.value = "";
     });
 
-    searchForm.addEventListener("input", function () { window.requestAnimationFrame(render); });
+    let resizeFrame = 0;
+    function scheduleRender() {
+      if (resizeFrame) window.cancelAnimationFrame(resizeFrame);
+      resizeFrame = window.requestAnimationFrame(function () {
+        resizeFrame = 0;
+        render();
+      });
+    }
+
+    searchForm.addEventListener("input", scheduleRender);
     sortSelect.addEventListener("change", render);
     if (sortSelect.tomselect) {
       sortSelect.tomselect.on("change", function (value) { sortSelect.value = value; render(); });
@@ -1071,6 +1188,7 @@
     }
     filterSelect.addEventListener("change", function () { activeFilter = filterSelect.value || "all"; render(); });
     if (filterSelect.tomselect) filterSelect.tomselect.on("change", function (value) { activeFilter = value || "all"; render(); });
+    window.addEventListener("resize", scheduleRender);
 
     window.Customokio = {
       getState: function () { return clone(state); },
@@ -1078,7 +1196,29 @@
     };
 
     render();
+    resolvePendingState(true);
+  }
+  let didInitialize = false;
+  function initOnce() {
+    if (didInitialize) return;
+    if (document.querySelector(".customokio-group-host")) {
+      didInitialize = true;
+      return;
+    }
+    didInitialize = true;
+    try {
+      setup();
+    } catch (error) {
+      didInitialize = false;
+      resolvePendingState(false);
+      console.error("Failed to initialize Customokio", error);
+    }
   }
 
-  document.addEventListener("DOMContentLoaded", setup);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initOnce, { once: true });
+  } else {
+    initOnce();
+  }
+  window.addEventListener("pageshow", initOnce);
 })();
