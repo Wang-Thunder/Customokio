@@ -1,4 +1,4 @@
-# Customokio 🕶️
+# Customokio
 
 Customokio is a reversible Pinokio home-screen customization that adds categories, nesting, drag-and-drop organization, per-category views, and client-side sorting without replacing the overall Pinokio look and feel.
 
@@ -6,7 +6,7 @@ It installs through Pinokio's supported `PINOKIO_HOME/web` customization path, s
 
 ![Customokio Animated Overview](assets/customokio_overview.gif)
 
-## 📁 What It Does
+## What It Does
 
 Customokio keeps the normal Pinokio home page structure and adds an organization layer on top of the existing app cards.
 
@@ -40,7 +40,7 @@ Feature highlights:
 
 ![Customokio Hero Overview](assets/home7_1280x640.png)
 
-## 🚫 What It Does Not Do
+## What It Does Not Do
 
 Customokio is intentionally client-side for organization behavior.
 
@@ -49,21 +49,21 @@ Customokio is intentionally client-side for organization behavior.
 - Category layout, local star fallback, and usage-based sort history are stored in browser local storage.
 - On Pinokio builds where the `/apps/preferences/:id` endpoint is unavailable, star state falls back to local browser storage.
 
-## 🧭 Feature Walkthrough
+## Feature Walkthrough
 
-### 🏠 Familiar Pinokio Home, Better Organized
+### Familiar Pinokio Home, Better Organized
 
 Customokio keeps the stock Pinokio home structure and layers categories on top instead of replacing the page.
 
 ![Customized Home Screen](assets/home1.png)
 
-### ➕ Create Categories Quickly
+### Create Categories Quickly
 
 Use `New category` to make top-level organization buckets without leaving the home screen.
 
 ![Create Category](assets/home2.png)
 
-### 🗂️ Fill Categories With Apps And Subcategories
+### Fill Categories With Apps And Subcategories
 
 Drag apps into a category, create subcategories, and build out a nested structure that matches how you actually browse your tools.
 
@@ -71,7 +71,7 @@ Drag apps into a category, create subcategories, and build out a nested structur
 
 ![Apps Inside A Category](assets/home4.png)
 
-### 🪟 Switch Views And Work With Multiple Groups
+### Switch Views And Work With Multiple Groups
 
 Use stacked layout when you want everything expanded vertically, folder layout when you want rigid columns, or flow layout when you want denser top-level packing with less dead space between categories.
 
@@ -79,8 +79,9 @@ Use stacked layout when you want everything expanded vertically, folder layout w
 
 ![Folder Category Layout](assets/home6.png)
 
-## 📝 Recent Updates
+## Recent Updates
 
+- Fixed an encoding regression that could render category icons as garbled symbols, and added automatic repair for already-saved broken category icons on load.
 - Improved runtime reattachment so Customokio now reapplies itself automatically if Pinokio refreshes the home screen after app start/stop state changes.
 - Added `Flow view` as a third top-level layout mode for denser category packing than `Folder view`.
 - Reduced the startup flash of the stock Pinokio home before the Customokio layer initializes.
@@ -99,7 +100,7 @@ Use stacked layout when you want everything expanded vertically, folder layout w
   - `.customokio.bak` sidecars are also written next to the live override files
   - restore now checks AppData backups first, then sidecars, then legacy `state/backup` files
 
-## ⚙️ How Installation Works
+## How Installation Works
 
 Customokio now keeps two backup copies of any existing Pinokio home overrides before it replaces them:
 
@@ -132,7 +133,7 @@ Action summary:
 - `Reapply`: reinstall the current local Customokio files
 - `Update + Reapply`: run `git pull`, then reinstall the latest package files
 
-## ✋ How To Use
+## How To Use
 
 1. Open the Customokio package in Pinokio.
 2. Click `Apply`.
@@ -163,7 +164,7 @@ If you apply Customokio while other apps are already running and the home screen
 
 If Pinokio refreshes the home screen after apps start or stop, Customokio now detects that redraw and reapplies its grouped layout automatically.
 
-## 🎯 Best For
+## Best For
 
 Customokio is useful if you want to:
 
@@ -173,7 +174,7 @@ Customokio is useful if you want to:
 - switch between a compact folder view and a more detailed stacked view
 - keep all organization local to your browser without changing Pinokio app metadata
 
-## 🔒 Storage And Privacy
+## Storage And Privacy
 
 Customokio stores client-side state in browser local storage:
 
@@ -197,7 +198,7 @@ These backup files are not uploaded anywhere. The AppData `manifest.json` only r
 
 The repository itself does not need your machine name, user name, LAN IP, or local paths to work.
 
-## 📦 Files
+## Files
 
 Main files in this package:
 
@@ -213,7 +214,7 @@ Main files in this package:
 - `web/public/customokio.css`: styling
 - `web/public/sortable.min.js`: bundled drag-and-drop dependency
 
-## 🧩 API Notes
+## API Notes
 
 This project does not expose a server-side layout API.
 
