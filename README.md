@@ -81,6 +81,7 @@ Use stacked layout when you want everything expanded vertically, folder layout w
 
 ## 📝 Recent Updates
 
+- Improved runtime reattachment so Customokio now reapplies itself automatically if Pinokio refreshes the home screen after app start/stop state changes.
 - Added `Flow view` as a third top-level layout mode for denser category packing than `Folder view`.
 - Reduced the startup flash of the stock Pinokio home before the Customokio layer initializes.
 - Improved startup initialization so Customokio now applies correctly even when Pinokio opens with no running apps.
@@ -159,6 +160,8 @@ Action summary:
 9. Use `Reapply` when you want to reinstall your current local version, or `Update + Reapply` when you want Customokio to `git pull` the latest repo changes before reinstalling.
 
 If you apply Customokio while other apps are already running and the home screen does not visibly change right away, refresh the Home page once or restart Pinokio. The override files may already be in place even if the currently visible home screen has not rerendered yet.
+
+If Pinokio refreshes the home screen after apps start or stop, Customokio now detects that redraw and reapplies its grouped layout automatically.
 
 ## 🎯 Best For
 
