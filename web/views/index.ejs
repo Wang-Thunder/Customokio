@@ -1064,8 +1064,8 @@ body.dark aside .current.selected {
                     <button class='btn edit-menu'>
                       <i class='fa-solid fa-pen-to-square'></i> Edit
                     </button>
-                    <button class='btn del' data-src="<%=item.url%>" data-safe-reset-uri="<%=/(^|[\\\\/])Customokio(?:\\.git)?$/i.test(item.path || '') || /^Customokio(?:\\.git)?$/i.test(item.uri || '') ? 'https://github.com/Wang-Thunder/Customokio.git/reset.js' : ''%>" data-disable="To delete the folder, the app should not be running.">
-                      <i class="fa-solid fa-trash-can"></i> <%=/(^|[\\\\/])Customokio(?:\\.git)?$/i.test(item.path || '') || /^Customokio(?:\\.git)?$/i.test(item.uri || '') ? 'Safe Delete' : 'Delete'%>
+                    <button class='btn del' data-src="<%=item.url%>" data-safe-reset-uri="<%=/(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.filepath || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.path || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.uri || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.url || '').trim()) ? 'https://github.com/Wang-Thunder/Customokio.git/reset.js' : ''%>" data-disable="To delete the folder, the app should not be running.">
+                      <i class="fa-solid fa-trash-can"></i> <%=/(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.filepath || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.path || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.uri || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.url || '').trim()) ? 'Safe Delete' : 'Delete'%>
                     </button>
                   </div>
                 </div>
@@ -1156,8 +1156,8 @@ body.dark aside .current.selected {
                     <button class='btn edit-menu'>
                       <i class='fa-solid fa-pen-to-square'></i> Edit
                     </button>
-                    <button class='btn del' data-src="<%=item.url%>" data-safe-reset-uri="<%=/(^|[\\\\/])Customokio(?:\\.git)?$/i.test(item.path || '') || /^Customokio(?:\\.git)?$/i.test(item.uri || '') ? 'https://github.com/Wang-Thunder/Customokio.git/reset.js' : ''%>">
-                      <i class="fa-solid fa-trash-can"></i> <%=/(^|[\\\\/])Customokio(?:\\.git)?$/i.test(item.path || '') || /^Customokio(?:\\.git)?$/i.test(item.uri || '') ? 'Safe Delete' : 'Delete'%>
+                    <button class='btn del' data-src="<%=item.url%>" data-safe-reset-uri="<%=/(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.filepath || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.path || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.uri || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.url || '').trim()) ? 'https://github.com/Wang-Thunder/Customokio.git/reset.js' : ''%>">
+                      <i class="fa-solid fa-trash-can"></i> <%=/(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.filepath || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.path || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.uri || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.url || '').trim()) ? 'Safe Delete' : 'Delete'%>
                     </button>
                   </div>
                 </div>
