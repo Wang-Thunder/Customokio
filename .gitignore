@@ -16,3 +16,6 @@ venv
 /TODO.md
 /README.github-preview.html
 /github_release_review/
+
+/RELEASE_CHECKLIST.md
+/scripts/validate_release.ps1

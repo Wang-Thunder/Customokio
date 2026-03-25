@@ -57,8 +57,8 @@ module.exports = {
         text: "Reapply",
         href: "reapply.js"
       }, {
-        icon: "fa-regular fa-circle-xmark",
-        text: "Restore Default",
+        icon: "fa-solid fa-triangle-exclamation",
+        text: "Safe Remove",
         href: "reset.js"
       }, {
         default: true,

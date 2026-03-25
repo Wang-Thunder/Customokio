@@ -4,6 +4,20 @@ Customokio is a reversible Pinokio home-screen customization that adds categorie
 
 It installs through Pinokio's supported `PINOKIO_HOME/web` customization path, so it behaves like a customization layer, not a fork of Pinokio core.
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+### IMPORTANT: SAFE UNINSTALL ###
+
+!!! DO NOT DELETE THE CUSTOMOKIO PACKAGE FOLDER FIRST !!!
+
+Use `Safe Remove` from the Customokio package page, or `Safe Delete` from the Customokio home-card menu.
+
+Deleting the package folder first can leave the Pinokio home override behind.
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 ![Customokio Animated Overview](assets/customokio_overview.gif)
 
 ## What It Does
@@ -35,7 +49,7 @@ Feature highlights:
 - Use in-page category dialogs instead of browser prompts, so naming and renaming stay inside the Pinokio window.
 - Export and import the layout as JSON.
 - Restore the default Pinokio home page.
-- Open the launcher to the README by default so `Apply`, `Reapply`, and `Restore Default` stay manual actions.
+- Open the launcher to the README by default so `Apply`, `Reapply`, and `Safe Remove` stay manual actions.
 - Choose between `Reapply` for the current local version and `Update + Reapply` to pull the latest package changes from GitHub first.
 
 ![Customokio Hero Overview](assets/home7_1280x640.png)
@@ -81,6 +95,7 @@ Use stacked layout when you want everything expanded vertically, folder layout w
 
 ## Recent Updates
 
+- Added a Customokio-only `Safe Delete` path in the home-card menu that runs `Safe Remove` first, then deletes the package folder.
 - Fixed an encoding regression that could render category icons as garbled symbols, and added automatic repair for already-saved broken category icons on load.
 - Improved runtime reattachment so Customokio now reapplies itself automatically if Pinokio refreshes the home screen after app start/stop state changes.
 - Added `Flow view` as a third top-level layout mode for denser category packing than `Folder view`.
@@ -117,7 +132,7 @@ When you click `Apply`, the launcher:
 - copies the required partials into `PINOKIO_HOME/web/views/partials/`
 - copies the client assets into `PINOKIO_HOME/web/public/`
 
-When you click `Restore Default`, the launcher:
+When you click `Safe Remove`, the launcher:
 
 - restores the backed-up template and partials from AppData first
 - falls back to the `.customokio.bak` sidecars if the AppData backup is unavailable
@@ -132,6 +147,7 @@ Action summary:
 - `Apply`: first-time installation
 - `Reapply`: reinstall the current local Customokio files
 - `Update + Reapply`: run `git pull`, then reinstall the latest package files
+- `Safe Remove`: restore the original Pinokio home files before removing the package
 
 ## How To Use
 
@@ -157,8 +173,9 @@ Action summary:
    - import layout
    - reset layout
    - filter by category
-8. If you want to remove Customokio safely, click `Restore Default` before uninstalling the package.
-9. Use `Reapply` when you want to reinstall your current local version, or `Update + Reapply` when you want Customokio to `git pull` the latest repo changes before reinstalling.
+8. If you want to remove Customokio from the package page, click `Safe Remove` before uninstalling the package.
+9. If you want to remove Customokio from the home screen menu, use the `Safe Delete` item on the Customokio app card. It restores the default Pinokio home first, then deletes the package folder.
+10. Use `Reapply` when you want to reinstall your current local version, or `Update + Reapply` when you want Customokio to `git pull` the latest repo changes before reinstalling.
 
 If you apply Customokio while other apps are already running and the home screen does not visibly change right away, refresh the Home page once or restart Pinokio. The override files may already be in place even if the currently visible home screen has not rerendered yet.
 

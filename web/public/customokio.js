@@ -1099,6 +1099,97 @@
       if (localPrefs && typeof localPrefs.starred === "boolean") {
         applyStarState(entry.card, localPrefs.starred);
       }
+      const openMenuButton = entry.card.querySelector(".open-menu");
+      if (openMenuButton && !openMenuButton.dataset.customokioMenuBound) {
+        openMenuButton.dataset.customokioMenuBound = "1";
+        openMenuButton.addEventListener("click", function (event) {
+          event.preventDefault();
+          event.stopPropagation();
+          if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+          const contextMenu = openMenuButton.closest(".col")?.querySelector(".context-menu");
+          if (!contextMenu) return;
+
+          document.querySelectorAll('.context-menu[popover]').forEach((menuEl) => {
+            if (menuEl !== contextMenu && menuEl.matches(':popover-open') && typeof menuEl.hidePopover === 'function') {
+              menuEl.hidePopover();
+            }
+          });
+          document.querySelectorAll('.context-menu[data-open="true"]').forEach((menuEl) => {
+            if (menuEl !== contextMenu) {
+              menuEl.style.display = 'none';
+              menuEl.dataset.open = 'false';
+            }
+          });
+
+          const hasNativePopover = typeof contextMenu.showPopover === "function";
+          const isOpen = hasNativePopover ? contextMenu.matches(':popover-open') : contextMenu.dataset.open === 'true';
+          if (isOpen) {
+            if (hasNativePopover) {
+              contextMenu.hidePopover();
+            } else {
+              contextMenu.style.display = 'none';
+              contextMenu.dataset.open = 'false';
+            }
+            return;
+          }
+
+          let width = parseFloat(contextMenu.dataset.cachedWidth || '0');
+          let height = parseFloat(contextMenu.dataset.cachedHeight || '0');
+          if (!width || !height) {
+            const prev = {
+              visibility: contextMenu.style.visibility,
+              display: contextMenu.style.display,
+              position: contextMenu.style.position,
+              top: contextMenu.style.top,
+              left: contextMenu.style.left,
+            };
+            contextMenu.style.visibility = 'hidden';
+            contextMenu.style.display = 'block';
+            contextMenu.style.position = 'fixed';
+            contextMenu.style.top = '0';
+            contextMenu.style.left = '0';
+            width = contextMenu.offsetWidth;
+            height = contextMenu.offsetHeight;
+            if (width) contextMenu.dataset.cachedWidth = String(width);
+            if (height) contextMenu.dataset.cachedHeight = String(height);
+            contextMenu.style.visibility = prev.visibility;
+            contextMenu.style.display = prev.display;
+            contextMenu.style.position = prev.position;
+            contextMenu.style.top = prev.top;
+            contextMenu.style.left = prev.left;
+          }
+
+          const buttonRect = openMenuButton.getBoundingClientRect();
+          const viewportPadding = 12;
+          let left = Math.min(buttonRect.left, window.innerWidth - width - viewportPadding);
+          left = Math.max(viewportPadding, left);
+          let top = buttonRect.bottom + 6;
+          if (top + height + viewportPadding > window.innerHeight) {
+            top = buttonRect.top - height - 6;
+          }
+          const maxTop = Math.max(viewportPadding, window.innerHeight - height - viewportPadding);
+          top = Math.min(Math.max(viewportPadding, top), maxTop);
+
+          if (hasNativePopover) {
+            contextMenu.style.position = 'fixed';
+            contextMenu.style.left = left + 'px';
+            contextMenu.style.top = top + 'px';
+            contextMenu.style.right = 'auto';
+            contextMenu.style.bottom = 'auto';
+            contextMenu.showPopover();
+          } else {
+            const btnContainer = openMenuButton.closest('.menu-btns');
+            if (!btnContainer) return;
+            const containerRect = btnContainer.getBoundingClientRect();
+            contextMenu.style.left = Math.max(0, left - containerRect.left) + 'px';
+            contextMenu.style.top = top - containerRect.top + 'px';
+            contextMenu.style.right = 'auto';
+            contextMenu.style.bottom = 'auto';
+            contextMenu.style.display = 'block';
+            contextMenu.dataset.open = 'true';
+          }
+        }, true);
+      }
       entry.card.setAttribute("draggable", "false");
       entry.card.querySelectorAll("img, svg").forEach((node) => node.setAttribute("draggable", "false"));
       entry.card.addEventListener("dragstart", function (event) {
