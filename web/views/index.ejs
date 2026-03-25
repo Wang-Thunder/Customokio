@@ -181,6 +181,8 @@ body.dark .context-menu-wrapper {
   background: whitesmoke !important;
   border-radius: 10px;
   overflow: hidden;
+  min-width: 220px;
+  padding: 6px 0;
 }
 .menu-btns {
   position: relative;
@@ -206,11 +208,24 @@ body.dark .context-menu-wrapper {
   background: none !important;
   border: none !important;
   display: block;
-  width: 80px;
-  padding: 6px 10px !important;
+  width: 100%;
+  padding: 7px 14px !important;
   text-align: left;
   color: black;
   margin: 0 !important;
+}
+.context-menu-section-title {
+  padding: 8px 14px 6px;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.45);
+}
+.context-menu-divider {
+  height: 1px;
+  margin: 6px 0;
+  background: rgba(0,0,0,0.08);
 }
 body.dark .btn {
   background: rgba(255,255,255,0.05) !important;
@@ -227,6 +242,12 @@ body.dark .btn {
 body.dark .context-menu .btn {
   color: white;
   background: none !important;
+}
+body.dark .context-menu-section-title {
+  color: rgba(255,255,255,0.55);
+}
+body.dark .context-menu-divider {
+  background: rgba(255,255,255,0.08);
 }
 body.dark .open-menu, body.dark .browse, body.dark .toggle-star {
   border: none !important;
@@ -1011,6 +1032,7 @@ body.dark aside .current.selected {
   <% if (running.length > 0) { %>
     <div class='running-apps'>
       <% running.forEach((item, index) => { %>
+        <% const isCustomokioApp = /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.filepath || '').trim()) || /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.path || '').trim()) || /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.uri || '').trim()) || /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.url || '').trim()) %>
         <a target="<%=item.target || '_self'%>" href="<%=item.browser_url%>" data-description="<%=item.description%>" data-index="<%=item.index%>" data-name="<%=item.name%>" data-title="<%=item.name%>" data-uri="<%=item.uri%>" data-icon="<%=item.icon%>" data-path="<%=item.path%>"  data-iconpath="<%=item.iconpath ? item.iconpath : ''%>" data-running="1" data-starred="<%=item.starred ? "1" : "0"%>" data-launch-count-total="<%=item.launch_count_total || 0%>" data-last-launch-at="<%=item.last_launch_at || ''%>" class='line align-top'>
           <h3>
             <div class='item-icon'>
@@ -1041,20 +1063,12 @@ body.dark aside .current.selected {
                   <i class="fa-<%=item.starred ? "solid" : "regular"%> fa-star"></i>
                   <span><%=item.starred ? "Starred" : "Star"%></span>
                 </button>
-                <button class='btn browse' data-src="<%=item.dev_url%>">
-                  <i class="fa-solid fa-code"></i> Dev
-                </button>
-                <button class='btn browse' data-src="<%=item.view_url%>">
-                  <i class="fa-regular fa-eye"></i> View
-                </button>
                 <button class='btn open-menu' type='button' popovertarget="context-menu-running-<%=index%>" popovertargetaction="toggle" aria-haspopup="menu">
                   <i class="fa-solid fa-bars"></i><span> Menu</span>
                 </button>
                 <div id='context-menu-running-<%=index%>' class='context-menu' popover>
                   <div class='context-menu-wrapper'>
-                    <button class='btn' data-filepath="<%=item.filepath%>">
-                      <i class="fa-solid fa-folder-open"></i> Open</button>
-                    </button>
+                    <div class='context-menu-section-title'>File</div>
                     <button class='btn copy-menu'>
                       <i class='fa-solid fa-copy'></i> Copy
                     </button>
@@ -1064,8 +1078,24 @@ body.dark aside .current.selected {
                     <button class='btn edit-menu'>
                       <i class='fa-solid fa-pen-to-square'></i> Edit
                     </button>
-                    <button class='btn del' data-src="<%=item.url%>" data-safe-reset-uri="<%=/(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.filepath || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.path || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.uri || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.url || '').trim()) ? 'https://github.com/Wang-Thunder/Customokio.git/reset.js' : ''%>" data-disable="To delete the folder, the app should not be running.">
-                      <i class="fa-solid fa-trash-can"></i> <%=/(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.filepath || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.path || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.uri || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.url || '').trim()) ? 'Safe Delete' : 'Delete'%>
+                    <button class='btn del' data-src="<%=item.url%>" data-safe-reset-uri="<%=isCustomokioApp ? 'https://github.com/Wang-Thunder/Customokio.git/reset.js' : ''%>" data-disable="To delete the folder, the app should not be running.">
+                      <i class="fa-solid fa-trash-can"></i> <%=isCustomokioApp ? 'Safe Delete' : 'Delete'%>
+                    </button>
+                    <div class='context-menu-divider'></div>
+                    <div class='context-menu-section-title'>Open</div>
+                    <button class='btn browse' data-src="<%=item.view_url%>">
+                      <i class="fa-regular fa-eye"></i> Open without launching
+                    </button>
+                    <button class='btn browse' data-src="<%=item.dev_url%>">
+                      <i class="fa-solid fa-code"></i> Dev mode
+                    </button>
+                    <% if (item.files_url) { %>
+                    <button class='btn browse' data-src="<%=item.files_url%>">
+                      <i class="fa-solid fa-file-lines"></i> Files mode
+                    </button>
+                    <% } %>
+                    <button class='btn' data-filepath="<%=item.filepath%>">
+                      <i class="fa-solid fa-folder-open"></i> Open in file explorer
                     </button>
                   </div>
                 </div>
@@ -1103,6 +1133,7 @@ body.dark aside .current.selected {
   <% if (notRunning.length > 0) { %>
     <div class='not-running-apps'>
       <% notRunning.forEach((item, index) => { %>
+        <% const isCustomokioApp = /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.filepath || '').trim()) || /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.path || '').trim()) || /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.uri || '').trim()) || /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.url || '').trim()) %>
         <a target="<%=item.target || '_self'%>" href="<%=item.browser_url%>" data-description="<%=item.description%>" data-index="<%=item.index%>" data-name="<%=item.name%>" data-title="<%=item.name%>" data-uri="<%=item.uri%>" data-icon="<%=item.icon%>" data-path="<%=item.path%>"  data-iconpath="<%=item.iconpath ? item.iconpath : ''%>" data-running="0" data-starred="<%=item.starred ? "1" : "0"%>" data-launch-count-total="<%=item.launch_count_total || 0%>" data-last-launch-at="<%=item.last_launch_at || ''%>" class='line align-top'>
           <h3>
             <div class='item-icon'>
@@ -1133,20 +1164,12 @@ body.dark aside .current.selected {
                   <i class="fa-<%=item.starred ? "solid" : "regular"%> fa-star"></i>
                   <span><%=item.starred ? "Starred" : "Star"%></span>
                 </button>
-                <button class='btn browse' data-src="<%=item.dev_url%>">
-                  <i class="fa-solid fa-code"></i> Dev
-                </button>
-                <button class='btn browse' data-src="<%=item.view_url%>">
-                  <i class="fa-regular fa-eye"></i> View
-                </button>
                 <button class='btn open-menu' type='button' popovertarget="context-menu-not-running-<%=index%>" popovertargetaction="toggle" aria-haspopup="menu">
                   <i class="fa-solid fa-bars"></i><span> Menu</span>
                 </button>
                 <div id='context-menu-not-running-<%=index%>' class='context-menu' popover>
                   <div class='context-menu-wrapper'>
-                    <button class='btn' data-filepath="<%=item.filepath%>">
-                      <i class="fa-solid fa-folder-open"></i> Open</button>
-                    </button>
+                    <div class='context-menu-section-title'>File</div>
                     <button class='btn copy-menu'>
                       <i class='fa-solid fa-copy'></i> Copy
                     </button>
@@ -1156,8 +1179,24 @@ body.dark aside .current.selected {
                     <button class='btn edit-menu'>
                       <i class='fa-solid fa-pen-to-square'></i> Edit
                     </button>
-                    <button class='btn del' data-src="<%=item.url%>" data-safe-reset-uri="<%=/(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.filepath || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.path || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.uri || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.url || '').trim()) ? 'https://github.com/Wang-Thunder/Customokio.git/reset.js' : ''%>">
-                      <i class="fa-solid fa-trash-can"></i> <%=/(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.filepath || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.path || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.uri || '').trim()) || /(^|[\\\\/])Customokio(?:\\.git)?([\\\\/])?$/i.test(String(item.url || '').trim()) ? 'Safe Delete' : 'Delete'%>
+                    <button class='btn del' data-src="<%=item.url%>" data-safe-reset-uri="<%=isCustomokioApp ? 'https://github.com/Wang-Thunder/Customokio.git/reset.js' : ''%>">
+                      <i class="fa-solid fa-trash-can"></i> <%=isCustomokioApp ? 'Safe Delete' : 'Delete'%>
+                    </button>
+                    <div class='context-menu-divider'></div>
+                    <div class='context-menu-section-title'>Open</div>
+                    <button class='btn browse' data-src="<%=item.view_url%>">
+                      <i class="fa-regular fa-eye"></i> Open without launching
+                    </button>
+                    <button class='btn browse' data-src="<%=item.dev_url%>">
+                      <i class="fa-solid fa-code"></i> Dev mode
+                    </button>
+                    <% if (item.files_url) { %>
+                    <button class='btn browse' data-src="<%=item.files_url%>">
+                      <i class="fa-solid fa-file-lines"></i> Files mode
+                    </button>
+                    <% } %>
+                    <button class='btn' data-filepath="<%=item.filepath%>">
+                      <i class="fa-solid fa-folder-open"></i> Open in file explorer
                     </button>
                   </div>
                 </div>
