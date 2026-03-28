@@ -49,6 +49,11 @@ module.exports = {
 
     if (installed) {
       return [{
+        default: true,
+        icon: "fa-solid fa-book",
+        text: "README",
+        href: "README.md?raw=true"
+      }, {
         icon: "fa-solid fa-cloud-arrow-down",
         text: "Update + Reapply",
         href: "update.js"
@@ -59,24 +64,20 @@ module.exports = {
       }, {
         icon: "fa-solid fa-triangle-exclamation",
         text: "Safe Remove",
-        href: "reset.js"
-      }, {
-        default: true,
-        icon: "fa-solid fa-book",
-        text: "README",
-        href: "README.md?raw=true"
+        href: "reset.js",
+        confirm: "Restore the default Pinokio home and remove Customokio?"
       }]
     }
 
     return [{
-      icon: "fa-solid fa-wand-magic-sparkles",
-      text: "Apply",
-      href: "install.js"
-    }, {
       default: true,
       icon: "fa-solid fa-book",
       text: "README",
       href: "README.md?raw=true"
+    }, {
+      icon: "fa-solid fa-wand-magic-sparkles",
+      text: "Apply",
+      href: "install.js"
     }]
   }
 }
