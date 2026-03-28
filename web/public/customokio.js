@@ -88,9 +88,9 @@
   function collectCards() {
     const cards = [];
     const seen = new Set();
-    [".running-apps > a.line", ".not-running-apps > a.line"].forEach((selector) => {
+    [".running-apps > .line", ".not-running-apps > .line"].forEach((selector) => {
       document.querySelectorAll(selector).forEach((card) => {
-        const ref = card.getAttribute("data-uri") || card.getAttribute("data-path") || card.getAttribute("href");
+        const ref = card.getAttribute("data-uri") || card.getAttribute("data-path") || card.getAttribute("data-browser-url") || card.querySelector(".line-main-link")?.getAttribute("href");
         if (!ref || seen.has(ref)) return;
         seen.add(ref);
         cards.push({ ref: ref, card: card, name: card.getAttribute("data-name") || ref });
@@ -1190,6 +1190,164 @@
           }
         }, true);
       }
+
+      const closeInlineContextMenu = (button) => {
+        const contextMenu = button ? button.closest(".context-menu") : null;
+        if (!contextMenu) return;
+        try {
+          if (typeof contextMenu.hidePopover === "function" && contextMenu.matches(":popover-open")) {
+            contextMenu.hidePopover();
+          }
+        } catch (_) {}
+        contextMenu.style.display = "none";
+        contextMenu.dataset.open = "false";
+      };
+
+      const bindMenuAction = (selector, handler) => {
+        entry.card.querySelectorAll(selector).forEach((button) => {
+          if (!button || button.dataset.customokioActionBound === "1") return;
+          button.dataset.customokioActionBound = "1";
+          button.addEventListener("click", async function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+            try {
+              await handler(button);
+            } catch (error) {
+              console.error("Customokio menu action failed", error);
+              alert(error && error.message ? error.message : String(error));
+            }
+          }, true);
+        });
+      };
+
+      const buildEditorOptions = (button, extra = {}) => {
+        const line = button.closest(".line");
+        if (!line) {
+          throw new Error("App card context is missing.");
+        }
+        const disableMessage = button.getAttribute("data-disable");
+        if (disableMessage && disableMessage.length > 0) {
+          alert(disableMessage);
+          return null;
+        }
+        return Object.assign({
+          title: line.getAttribute("data-title"),
+          description: line.getAttribute("data-description"),
+          old_path: line.getAttribute("data-path"),
+          icon: line.getAttribute("data-icon"),
+          iconpath: line.getAttribute("data-iconpath"),
+          edit: true,
+          redirect: function () { return location.href; }
+        }, extra);
+      };
+
+      bindMenuAction(".browse", async function (button) {
+        const src = button.getAttribute("data-src");
+        closeInlineContextMenu(button);
+        if (!src) return;
+        if (window.PinokioHomeGuardNavigate) {
+          window.PinokioHomeGuardNavigate(src);
+        } else {
+          location.href = src;
+        }
+      });
+
+      bindMenuAction(".edit-menu", async function (button) {
+        if (typeof FSEditor !== "function") {
+          throw new Error("FSEditor is unavailable.");
+        }
+        const options = buildEditorOptions(button);
+        if (!options) return;
+        closeInlineContextMenu(button);
+        await FSEditor(options);
+      });
+
+      bindMenuAction(".copy-menu", async function (button) {
+        if (typeof FSEditor !== "function") {
+          throw new Error("FSEditor is unavailable.");
+        }
+        const options = buildEditorOptions(button, { copy: true });
+        if (!options) return;
+        closeInlineContextMenu(button);
+        await FSEditor(options);
+      });
+
+      bindMenuAction(".move-menu", async function (button) {
+        if (typeof FSEditor !== "function") {
+          throw new Error("FSEditor is unavailable.");
+        }
+        const options = buildEditorOptions(button, { move: true });
+        if (!options) return;
+        closeInlineContextMenu(button);
+        await FSEditor(options);
+      });
+
+      bindMenuAction(".del", async function (button) {
+        const disableMessage = button.getAttribute("data-disable");
+        if (disableMessage && disableMessage.length > 0) {
+          alert(disableMessage);
+          return;
+        }
+        closeInlineContextMenu(button);
+        const safeResetUri = button.getAttribute("data-safe-reset-uri");
+        const confirmMessage = safeResetUri
+          ? "Customokio changes Pinokio's home files. Safe Delete will restore the default home first, then delete the Customokio folder. Continue?"
+          : "Are you sure you want to delete the folder? All files in the folder will be gone.";
+        if (!confirm(confirmMessage)) {
+          return;
+        }
+        const itemEl = button.closest(".line[data-uri]");
+        if (!itemEl) {
+          throw new Error("App card context is missing.");
+        }
+        const name = itemEl.getAttribute("data-uri");
+        try {
+          if (safeResetUri) {
+            Swal.fire({
+              html: '<i class="fa-solid fa-circle-notch fa-spin"></i> Restoring default Pinokio home',
+              customClass: {
+                container: "loader-container",
+                popup: "loader-popup",
+                htmlContainer: "loader-dialog",
+                footer: "hidden",
+                actions: "hidden"
+              }
+            });
+            await runScriptRpc(safeResetUri);
+            Swal.update({
+              html: '<i class="fa-solid fa-circle-notch fa-spin"></i> Deleting Customokio'
+            });
+          } else {
+            Swal.fire({
+              html: '<i class="fa-solid fa-circle-notch fa-spin"></i> Deleting',
+              customClass: {
+                container: "loader-container",
+                popup: "loader-popup",
+                htmlContainer: "loader-dialog",
+                footer: "hidden",
+                actions: "hidden"
+              }
+            });
+          }
+          const res = await deleteHomeApp(name);
+          Swal.close();
+          if (res && res.success) {
+            location.href = "/home";
+            return;
+          }
+          if (res && res.error) {
+            throw new Error(res.error);
+          }
+        } catch (error) {
+          try { Swal.close(); } catch (_) {}
+          if (safeResetUri) {
+            throw new Error("Customokio safe delete could not finish.\n\n" + formatRpcError(error && error.message ? error.message : error));
+          }
+          throw error;
+        }
+      });
+
       entry.card.setAttribute("draggable", "false");
       entry.card.querySelectorAll("img, svg").forEach((node) => node.setAttribute("draggable", "false"));
       entry.card.addEventListener("dragstart", function (event) {
@@ -1199,10 +1357,17 @@
         if (document.activeElement && typeof document.activeElement.blur === "function") document.activeElement.blur();
       });
       entry.card.addEventListener("click", function (event) {
-        const ignored = event.target.closest(".toggle-star, .open-menu, .edit-menu, .copy-menu, .move-menu, .del, .shutdown");
+        const ignored = event.target.closest(".toggle-star, .open-menu, .edit-menu, .copy-menu, .move-menu, .browse, .del, .shutdown, [data-filepath], .menu-btn, .menu-btns, .btns, .context-menu");
         if (ignored) return;
+        const href = entry.card.getAttribute("data-browser-url");
+        if (!href) return;
         recordUsage(entry.ref);
-      }, true);
+        if (window.PinokioHomeGuardNavigate) {
+          window.PinokioHomeGuardNavigate(href);
+        } else {
+          location.href = href;
+        }
+      });
     });
 
     if (typeof window.TomSelect === "function" && !filterSelect.tomselect) {

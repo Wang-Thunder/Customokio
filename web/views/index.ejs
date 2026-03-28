@@ -187,6 +187,7 @@ body.dark .context-menu-wrapper {
 .menu-btns {
   position: relative;
 }
+
 .context-menu {
   position: absolute;
   right: auto;
@@ -1033,7 +1034,8 @@ body.dark aside .current.selected {
     <div class='running-apps'>
       <% running.forEach((item, index) => { %>
         <% const isCustomokioApp = /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.filepath || '').trim()) || /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.path || '').trim()) || /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.uri || '').trim()) || /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.url || '').trim()) %>
-        <a target="<%=item.target || '_self'%>" href="<%=item.browser_url%>" data-description="<%=item.description%>" data-index="<%=item.index%>" data-name="<%=item.name%>" data-title="<%=item.name%>" data-uri="<%=item.uri%>" data-icon="<%=item.icon%>" data-path="<%=item.path%>"  data-iconpath="<%=item.iconpath ? item.iconpath : ''%>" data-running="1" data-starred="<%=item.starred ? "1" : "0"%>" data-launch-count-total="<%=item.launch_count_total || 0%>" data-last-launch-at="<%=item.last_launch_at || ''%>" class='line align-top'>
+        <div data-description="<%=item.description%>" data-index="<%=item.index%>" data-name="<%=item.name%>" data-title="<%=item.name%>" data-uri="<%=item.uri%>" data-icon="<%=item.icon%>" data-path="<%=item.path%>" data-browser-url="<%=item.browser_url%>" data-iconpath="<%=item.iconpath ? item.iconpath : ''%>" data-running="1" data-starred="<%=item.starred ? "1" : "0"%>" data-launch-count-total="<%=item.launch_count_total || 0%>" data-last-launch-at="<%=item.last_launch_at || ''%>" class='line align-top'>
+
           <h3>
             <div class='item-icon'>
               <% if (item.icon) { %>
@@ -1126,7 +1128,7 @@ body.dark aside .current.selected {
               <% } %>
             </div>
           </h3>
-        </a>
+        </div>
       <% }) %>
     </div>
   <% } %>
@@ -1134,7 +1136,8 @@ body.dark aside .current.selected {
     <div class='not-running-apps'>
       <% notRunning.forEach((item, index) => { %>
         <% const isCustomokioApp = /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.filepath || '').trim()) || /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.path || '').trim()) || /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.uri || '').trim()) || /(^|[\/])Customokio(?:\.git)?([\/])?$/i.test(String(item.url || '').trim()) %>
-        <a target="<%=item.target || '_self'%>" href="<%=item.browser_url%>" data-description="<%=item.description%>" data-index="<%=item.index%>" data-name="<%=item.name%>" data-title="<%=item.name%>" data-uri="<%=item.uri%>" data-icon="<%=item.icon%>" data-path="<%=item.path%>"  data-iconpath="<%=item.iconpath ? item.iconpath : ''%>" data-running="0" data-starred="<%=item.starred ? "1" : "0"%>" data-launch-count-total="<%=item.launch_count_total || 0%>" data-last-launch-at="<%=item.last_launch_at || ''%>" class='line align-top'>
+        <div data-description="<%=item.description%>" data-index="<%=item.index%>" data-name="<%=item.name%>" data-title="<%=item.name%>" data-uri="<%=item.uri%>" data-icon="<%=item.icon%>" data-path="<%=item.path%>" data-browser-url="<%=item.browser_url%>" data-iconpath="<%=item.iconpath ? item.iconpath : ''%>" data-running="0" data-starred="<%=item.starred ? "1" : "0"%>" data-launch-count-total="<%=item.launch_count_total || 0%>" data-last-launch-at="<%=item.last_launch_at || ''%>" class='line align-top'>
+
           <h3>
             <div class='item-icon'>
               <% if (item.icon) { %>
@@ -1213,7 +1216,7 @@ body.dark aside .current.selected {
               <% } %>
             </div>
           </h3>
-        </a>
+        </div>
       <% }) %>
     </div>
   <% } %>
@@ -1430,6 +1433,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (event.defaultPrevented || event.button !== 0) return;
     // Let modifier-assisted shortcuts (open in new tab, etc.) behave normally
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    // Ignore nested controls inside app cards so their own handlers can run.
+    if (event.target.closest("button, input, select, textarea, [role='button']")) return;
     // Only guard actual anchor navigations
     const anchor = event.target.closest("a[href]");
     if (!anchor) return;
@@ -1858,10 +1863,15 @@ document.addEventListener("keydown", (e) => {
     //let selected = document.querySelector(".line.selected:not(.hidden) .title a")
     let selected = document.querySelector(".line.selected:not(.hidden)")
     console.log("selected", selected)
-    if (selected) {
+    let selectedUrl = selected ? selected.getAttribute("data-browser-url") : null
+    if (selectedUrl) {
       e.preventDefault()
       e.stopPropagation()
-      selected.click()
+      if (window.PinokioHomeGuardNavigate) {
+        window.PinokioHomeGuardNavigate(selectedUrl)
+      } else {
+        location.href = selectedUrl
+      }
     }
   }
 });
@@ -2578,6 +2588,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 </script>
 <script src="/opener.js"></script>
-<script src="/customokio.js"></script>
+<script src="/customokio.js?v=20260328-menufix2"></script>
 </body>
 </html>
